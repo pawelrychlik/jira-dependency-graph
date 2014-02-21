@@ -35,9 +35,7 @@ def build_graph_data(start_issue_key, get_issue):
         between issues. This will consider both subtasks and issue links.
     """
     def get_key(issue):
-        return issue['key'].split('-')[1]
-    def get_link_key(link):
-        return link['issueKey'].split('-')[1]
+        return issue['key']
 
     # since the graph can be cyclic we need to prevent infinite recursion
     seen = []
@@ -48,18 +46,19 @@ def build_graph_data(start_issue_key, get_issue):
         seen.append(issue_key)
         children = []
         fields = issue['fields']
-        if fields.has_key('sub-tasks') and fields['sub-tasks'].has_key('value'):
-            for other_issue in issue['fields']['sub-tasks']['value']:
-                node = '"%s"->"%s"[color=blue][penwidth=2.0]' % (get_key(issue), get_link_key(other_issue))
+        if fields.has_key('subtasks'):
+            for other_issue in fields['subtasks']:
+                node = '"%s"->"%s"[color=blue][penwidth=2.0]' % (issue_key, get_key(other_issue))
                 graph.append(node)
-                children.append(other_issue['issueKey'])
-        if fields.has_key('links') and fields['links'].has_key('value'):
-            for other_issue in issue['fields']['links']['value']:
+                children.append(get_key(other_issue))
+        if fields.has_key('issuelinks'):
+            for other_link in fields['issuelinks']:
                 # Only add graphviz data for outbound links since that will also draw the corresponding inbound link
-                if other_issue['type']['direction'] == 'OUTBOUND':
-                    node = '"%s"->"%s"[arrowhead=dot]' % (get_key(issue), get_link_key(other_issue))
+                if other_link.has_key('outwardIssue'):
+                    other_issue = other_link['outwardIssue']
+                    node = '"%s"->"%s"[arrowhead=dot]' % (issue_key, get_key(other_issue))
                     graph.append(node)
-                children.append(other_issue['issueKey'])
+                    children.append(get_key(other_issue))
         # now construct graph data for all subtasks and links of this issue
         for child in (x for x in children if x not in seen):
             walk(child, graph)
