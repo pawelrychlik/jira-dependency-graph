@@ -3,7 +3,7 @@ import optparse
 from itertools import chain
 import json
 
-from restkit import Resource, SimplePool, BasicAuth, request
+from restkit import Resource, BasicAuth, request
 
 # Using REST is pretty simple. The vast majority of this code is about the "other stuff": dealing with
 # command line options, formatting graphviz, calling Google Charts, etc. The actual JIRA REST-specific code
@@ -11,7 +11,7 @@ from restkit import Resource, SimplePool, BasicAuth, request
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart?'
 
-def fetcher_factory(url, pool, auth):
+def fetcher_factory(url, auth):
     """ This factory will create the actual method used to fetch issues from JIRA. This is really just a closure that saves us having
         to pass a bunch of parameters all over the place all the time. """
     def get_issue(key):
@@ -19,7 +19,7 @@ def fetcher_factory(url, pool, auth):
             with JIRA's REST API. """
         print('Fetching ' + key)
         # we need to expand subtasks and links since that's what we care about here.
-        resource = Resource(url + ('/rest/api/latest/issue/%s' % key), pool_instance=pool, filters=[auth])
+        resource = Resource(url + ('/rest/api/latest/issue/%s' % key), filters=[auth])
         response = resource.get(headers = {'Content-Type' : 'application/json'})
         if response.status_int == 200:
             # Not all resources will return 200 on success. There are other success status codes. Like 204. We've read
@@ -95,10 +95,9 @@ def parse_args():
 if __name__ == '__main__':
     (options, args) = parse_args()
 
-    pool = SimplePool(keepalive=2)
     # Basic Auth is usually easier for scripts like this to deal with than Cookies.
     auth = BasicAuth(options.user, options.password)
-    issue_fetcher = fetcher_factory(options.jira_url, pool, auth)
+    issue_fetcher = fetcher_factory(options.jira_url, auth)
 
     if len(args) != 1:
         print('Must specify exactly one issue key. (e.g. JRADEV-1107, JRADEV-1391)')
@@ -107,3 +106,4 @@ if __name__ == '__main__':
 
     graph = build_graph_data(start_issue_key, issue_fetcher)
     create_graph_image(graph, options.image_file)
+
