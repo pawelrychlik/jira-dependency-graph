@@ -59,18 +59,18 @@ def build_graph_data(start_issue_key, get_issue):
                     other_issue = other_link['outwardIssue']
                     other_issue_key = get_key(other_issue)
                     link_type = other_link['type']['outward']
-                    print('issue = ' + other_issue_key + ' link type = ' + link_type)
+                    print(issue_key + ' => ' + link_type + ' => ' + other_issue_key)
                     node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, other_issue_key, quote_plus(link_type))
                     graph.append(node)
-                    children.append(get_key(other_issue))
+                    children.append(other_issue_key)
                 if other_link.has_key('inwardIssue'):
                     other_issue = other_link['inwardIssue']
                     other_issue_key = get_key(other_issue)
                     link_type = other_link['type']['inward']
-                    print('issue = ' + other_issue_key + ' link type = ' + link_type)
-                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (other_issue_key, issue_key, quote_plus(link_type))
+                    print(issue_key + ' <= ' + link_type + ' <= ' + other_issue_key)
+                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, other_issue_key, quote_plus(link_type))
                     graph.append(node)
-                    children.append(get_key(other_issue))
+                    children.append(other_issue_key)
         # now construct graph data for all subtasks and links of this issue
         for child in (x for x in children if x not in seen):
             walk(child, graph)
