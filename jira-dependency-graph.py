@@ -38,6 +38,26 @@ def build_graph_data(start_issue_key, get_issue):
     def get_key(issue):
         return issue['key']
 
+    def process_link(issue_key, link):
+        if link.has_key('outwardIssue'):
+            direction = 'outward'
+        elif link.has_key('inwardIssue'):
+            direction = 'inward'
+        else:
+            return
+
+        linked_issue = link[direction + 'Issue']
+        linked_issue_key = get_key(linked_issue)
+        link_type = link['type'][direction]
+
+        if direction == 'outward':
+            print(issue_key + ' => ' + link_type + ' => ' + linked_issue_key)
+        else:
+            print(issue_key + ' <= ' + link_type + ' <= ' + linked_issue_key)
+
+        node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, linked_issue_key, quote_plus(link_type))
+        return linked_issue_key, node
+
     # since the graph can be cyclic we need to prevent infinite recursion
     seen = []
 
@@ -54,23 +74,10 @@ def build_graph_data(start_issue_key, get_issue):
                 children.append(get_key(other_issue))
         if fields.has_key('issuelinks'):
             for other_link in fields['issuelinks']:
-                # Only add graphviz data for outbound links since that will also draw the corresponding inbound link
-                if other_link.has_key('outwardIssue'):
-                    other_issue = other_link['outwardIssue']
-                    other_issue_key = get_key(other_issue)
-                    link_type = other_link['type']['outward']
-                    print(issue_key + ' => ' + link_type + ' => ' + other_issue_key)
-                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, other_issue_key, quote_plus(link_type))
-                    graph.append(node)
-                    children.append(other_issue_key)
-                if other_link.has_key('inwardIssue'):
-                    other_issue = other_link['inwardIssue']
-                    other_issue_key = get_key(other_issue)
-                    link_type = other_link['type']['inward']
-                    print(issue_key + ' <= ' + link_type + ' <= ' + other_issue_key)
-                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, other_issue_key, quote_plus(link_type))
-                    graph.append(node)
-                    children.append(other_issue_key)
+                result = process_link(issue_key, other_link)
+                if result is not None:
+                    children.append(result[0])
+                    graph.append(result[1])
         # now construct graph data for all subtasks and links of this issue
         for child in (x for x in children if x not in seen):
             walk(child, graph)
