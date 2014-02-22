@@ -68,10 +68,12 @@ def build_graph_data(start_issue_key, get_issue):
         children = []
         fields = issue['fields']
         if fields.has_key('subtasks'):
-            for other_issue in fields['subtasks']:
-                node = '"%s"->"%s"[color=blue][penwidth=2.0]' % (issue_key, get_key(other_issue))
+            for subtask in fields['subtasks']:
+                subtask_key = get_key(subtask)
+                print(issue_key + ' => has subtask => ' + subtask_key)
+                node = '"%s"->"%s"[color=blue][label="subtask"]' % (issue_key, subtask_key)
                 graph.append(node)
-                children.append(get_key(other_issue))
+                children.append(subtask_key)
         if fields.has_key('issuelinks'):
             for other_link in fields['issuelinks']:
                 result = process_link(issue_key, other_link)
