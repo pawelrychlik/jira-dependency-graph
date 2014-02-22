@@ -31,3 +31,5 @@ Usage:
 Notes:
 ======
 Based on: [draw-chart.py](https://developer.atlassian.com/download/attachments/4227078/draw-chart.py) and [Atlassian JIRA development documentation](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+API+Version+2+Tutorial#JIRARESTAPIVersion2Tutorial-Example#1:GraphingImageLinks), which seemingly was no longer compatible with JIRA REST API Version 2.
+
+There is a limit on the query lenght: "The longest URL that Google accepts in a chart GET request is 2048 characters in length, after URL-encoding" (from [faq](https://developers.google.com/chart/image/faq)).

@@ -2,6 +2,7 @@
 import optparse
 from itertools import chain
 import json
+from urllib import quote_plus
 
 from restkit import Resource, BasicAuth, request
 
@@ -56,7 +57,18 @@ def build_graph_data(start_issue_key, get_issue):
                 # Only add graphviz data for outbound links since that will also draw the corresponding inbound link
                 if other_link.has_key('outwardIssue'):
                     other_issue = other_link['outwardIssue']
-                    node = '"%s"->"%s"[arrowhead=dot]' % (issue_key, get_key(other_issue))
+                    other_issue_key = get_key(other_issue)
+                    link_type = other_link['type']['outward']
+                    print('issue = ' + other_issue_key + ' link type = ' + link_type)
+                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, other_issue_key, quote_plus(link_type))
+                    graph.append(node)
+                    children.append(get_key(other_issue))
+                if other_link.has_key('inwardIssue'):
+                    other_issue = other_link['inwardIssue']
+                    other_issue_key = get_key(other_issue)
+                    link_type = other_link['type']['inward']
+                    print('issue = ' + other_issue_key + ' link type = ' + link_type)
+                    node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (other_issue_key, issue_key, quote_plus(link_type))
                     graph.append(node)
                     children.append(get_key(other_issue))
         # now construct graph data for all subtasks and links of this issue
@@ -74,6 +86,10 @@ def create_graph_image(graph_data, image_file):
         [1]: http://code.google.com/apis/chart/docs/gallery/graphviz.html
     """
     chart_url = GOOGLE_CHART_URL + 'cht=gv&chl=digraph{%s}' % ';'.join(graph_data)
+
+    print('Google Chart request:')
+    print(chart_url)
+
     g = request(chart_url)
 
     print('Writing to ' + image_file)
