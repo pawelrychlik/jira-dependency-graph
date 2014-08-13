@@ -47,6 +47,23 @@ Usage:
 Result:
 ![Example result](examples/issue_graph.png)
 
+Local Usage:
+============
+If you have issues with the Google Graphviz API limitations you can use your local graphviz installation like this:
+
+    $ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
+    $ cd jira-dependency-graph
+    $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
+
+Advanved Usage:
+===============
+In case you have specific issue links you don't want to see in your graph, you can exclude them:
+
+    $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --exclude-link 'is required by' --exclude-link 'duplicates' issue-key
+
+The grapher will still walk the link, just exclude the edge. This especially useful for bidirectional links and you only
+want to see one of them, e.g. *depends on* and *is required by*.
+
 Notes:
 ======
 Based on: [draw-chart.py](https://developer.atlassian.com/download/attachments/4227078/draw-chart.py) and [Atlassian JIRA development documentation](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+API+Version+2+Tutorial#JIRARESTAPIVersion2Tutorial-Example#1:GraphingImageLinks), which seemingly was no longer compatible with JIRA REST API Version 2.
