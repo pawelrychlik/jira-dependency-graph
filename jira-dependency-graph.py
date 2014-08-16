@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-import optparse
-from itertools import chain
-import json
-from urllib import quote_plus
 
-from restkit import Resource, BasicAuth, request
+from __future__ import print_function
+
+import argparse
+import json
+import sys
+
+import requests
 
 # Using REST is pretty simple. The vast majority of this code is about the "other stuff": dealing with
 # command line options, formatting graphviz, calling Google Charts, etc. The actual JIRA REST-specific code
@@ -12,26 +14,40 @@ from restkit import Resource, BasicAuth, request
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart?'
 
-def fetcher_factory(url, auth):
+
+def log(*args):
+    print(*args, file=sys.stderr)
+
+
+class JiraSearch(object):
     """ This factory will create the actual method used to fetch issues from JIRA. This is really just a closure that saves us having
         to pass a bunch of parameters all over the place all the time. """
-    def get_issue(key):
+
+    def __init__(self, url, auth):
+        self.url = url + '/rest/api/latest'
+        self.auth = auth
+        self.fields = ','.join(['key', 'issuetype', 'issuelinks', 'subtasks'])
+
+    def get(self, uri, params={}):
+        return requests.get(self.url + uri, params=params, auth=self.auth, headers={'Content-Type' : 'application/json'})
+
+    def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
             with JIRA's REST API. """
-        print('Fetching ' + key)
+        log('Fetching ' + key)
         # we need to expand subtasks and links since that's what we care about here.
-        resource = Resource(url + ('/rest/api/latest/issue/%s' % key), filters=[auth])
-        response = resource.get(headers = {'Content-Type' : 'application/json'})
-        if response.status_int == 200:
-            # Not all resources will return 200 on success. There are other success status codes. Like 204. We've read
-            # the documentation for though and know what to expect here.
-            issue = json.loads(response.body_string())
-            return issue
-        else:
-            return None
-    return get_issue
+        response = self.get('/issue/%s' % key, params={'fields': self.fields})
+        return response.json()
 
-def build_graph_data(start_issue_key, get_issue):
+    def query(self, query):
+        log('Querying ' + query)
+        # TODO comment
+        response = self.get('/search', params={'jql': query, 'fields': self.fields})
+        content = response.json()
+        return content['issues']
+
+
+def build_graph_data(start_issue_key, jira, excludes):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -50,12 +66,15 @@ def build_graph_data(start_issue_key, get_issue):
         linked_issue_key = get_key(linked_issue)
         link_type = link['type'][direction]
 
-        if direction == 'outward':
-            print(issue_key + ' => ' + link_type + ' => ' + linked_issue_key)
-        else:
-            print(issue_key + ' <= ' + link_type + ' <= ' + linked_issue_key)
+        if link_type in excludes:
+            return linked_issue_key, None
 
-        node = '"%s"->"%s"[arrowhead=empty][label="%s"]' % (issue_key, linked_issue_key, quote_plus(link_type))
+        if direction == 'outward':
+            log(issue_key + ' => ' + link_type + ' => ' + linked_issue_key)
+        else:
+            log(issue_key + ' <= ' + link_type + ' <= ' + linked_issue_key)
+
+        node = '"%s"->"%s"[label="%s"]' % (issue_key, linked_issue_key, link_type)
         return linked_issue_key, node
 
     # since the graph can be cyclic we need to prevent infinite recursion
@@ -63,14 +82,22 @@ def build_graph_data(start_issue_key, get_issue):
 
     def walk(issue_key, graph):
         """ issue is the JSON representation of the issue """
-        issue = get_issue(issue_key)
+        issue = jira.get_issue(issue_key)
         seen.append(issue_key)
         children = []
         fields = issue['fields']
+        if fields['issuetype']['name'] == 'Epic':
+            issues = jira.query('"Epic Link" = "%s"' % issue_key)
+            for subtask in issues:
+                subtask_key = get_key(subtask)
+                log(subtask_key + ' => references epic => ' + issue_key)
+                node = '"%s"->"%s"[color=orange]' % (issue_key, subtask_key)
+                graph.append(node)
+                children.append(subtask_key)
         if fields.has_key('subtasks'):
             for subtask in fields['subtasks']:
                 subtask_key = get_key(subtask)
-                print(issue_key + ' => has subtask => ' + subtask_key)
+                log(issue_key + ' => has subtask => ' + subtask_key)
                 node = '"%s"->"%s"[color=blue][label="subtask"]' % (issue_key, subtask_key)
                 graph.append(node)
                 children.append(subtask_key)
@@ -79,14 +106,15 @@ def build_graph_data(start_issue_key, get_issue):
                 result = process_link(issue_key, other_link)
                 if result is not None:
                     children.append(result[0])
-                    graph.append(result[1])
+                    if result[1] is not None:
+                        graph.append(result[1])
         # now construct graph data for all subtasks and links of this issue
         for child in (x for x in children if x not in seen):
             walk(child, graph)
         return graph
 
-    graph = walk(start_issue_key, [])
-    return graph
+    return walk(start_issue_key, [])
+
 
 def create_graph_image(graph_data, image_file):
     """ Given a formatted blob of graphviz chart data[1], make the actual request to Google
@@ -99,35 +127,45 @@ def create_graph_image(graph_data, image_file):
     print('Google Chart request:')
     print(chart_url)
 
-    g = request(chart_url)
+    response = requests.get(chart_url)
 
-    print('Writing to ' + image_file)
-    image = open(image_file, 'w+')
-    image.write(g.body_stream().read())
-    image.close()
+    with open(image_file, 'w+') as image:
+        print('Writing to ' + image_file)
+        image.write(response.content)
+
     return image_file
 
+
+def print_graph(graph_data):
+    print('digraph{%s}' % ';'.join(graph_data))
+
+
 def parse_args():
-    parser = optparse.OptionParser()
-    parser.add_option('-u', '--user', dest='user', default='admin', help='Username to access JIRA')
-    parser.add_option('-p', '--password', dest='password', default='admin', help='Password to access JIRA')
-    parser.add_option('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
-    parser.add_option('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--user', dest='user', default='admin', help='Username to access JIRA')
+    parser.add_argument('-p', '--password', dest='password', default='admin', help='Password to access JIRA')
+    parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
+    parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
+    parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
+    parser.add_argument('-x', '--exclude-link', dest='excludes', action='append', help='Exclude link type(s)')
+    parser.add_argument('issue', nargs='?', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
 
     return parser.parse_args()
 
-if __name__ == '__main__':
-    (options, args) = parse_args()
+
+def main():
+    options = parse_args()
 
     # Basic Auth is usually easier for scripts like this to deal with than Cookies.
-    auth = BasicAuth(options.user, options.password)
-    issue_fetcher = fetcher_factory(options.jira_url, auth)
+    auth = (options.user, options.password)
+    jira = JiraSearch(options.jira_url, auth)
 
-    if len(args) != 1:
-        print('Must specify exactly one issue key. (e.g. JRADEV-1107, JRADEV-1391)')
-        import sys; sys.exit(1)
-    start_issue_key = args[0]
+    graph = build_graph_data(options.issue, jira, options.excludes)
 
-    graph = build_graph_data(start_issue_key, issue_fetcher)
-    create_graph_image(graph, options.image_file)
+    if options.local:
+        print_graph(graph)
+    else:
+        create_graph_image(graph, options.image_file)
 
+if __name__ == '__main__':
+    main()
