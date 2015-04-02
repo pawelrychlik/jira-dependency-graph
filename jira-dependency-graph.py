@@ -29,7 +29,13 @@ class JiraSearch(object):
         self.fields = ','.join(['key', 'issuetype', 'issuelinks', 'subtasks'])
 
     def get(self, uri, params={}):
-        return requests.get(self.url + uri, params=params, auth=self.auth, headers={'Content-Type' : 'application/json'})
+        headers = {'Content-Type' : 'application/json'}
+        url = self.url + uri
+
+        if isinstance(self.auth, str):
+            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers)
+        else:
+            return requests.get(url, params=params, auth=self.auth, headers=headers)
 
     def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
@@ -144,10 +150,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--user', dest='user', default='admin', help='Username to access JIRA')
     parser.add_argument('-p', '--password', dest='password', default='admin', help='Password to access JIRA')
+    parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSID session cookie value')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
-    parser.add_argument('-x', '--exclude-link', dest='excludes', action='append', help='Exclude link type(s)')
+    parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
     parser.add_argument('issue', nargs='?', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
 
     return parser.parse_args()
@@ -156,8 +163,13 @@ def parse_args():
 def main():
     options = parse_args()
 
-    # Basic Auth is usually easier for scripts like this to deal with than Cookies.
-    auth = (options.user, options.password)
+    if options.cookie is not None:
+        # Log in with browser and use --cookie=ABCDEF012345 commandline argument
+        auth = options.cookie
+    else:
+        # Basic Auth is usually easier for scripts like this to deal with than Cookies.
+        auth = (options.user, options.password)
+
     jira = JiraSearch(options.jira_url, auth)
 
     graph = build_graph_data(options.issue, jira, options.excludes)
