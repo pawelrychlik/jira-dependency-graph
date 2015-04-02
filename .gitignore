@@ -1,18 +1,5 @@
-# intellij
-/.idea
-*.iml
-
-# eclipse
-.classpath
-.settings
-.project
-.metadata
-.buildpath
-
-# vi
-*.swp
-
-# temporary stuff
-*.tmp
-*.bak
-*.log
+*
+!*/
+!*.py
+!*.md
+!.gitignore
