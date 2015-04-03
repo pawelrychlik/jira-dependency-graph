@@ -150,7 +150,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--user', dest='user', default='admin', help='Username to access JIRA')
     parser.add_argument('-p', '--password', dest='password', default='admin', help='Password to access JIRA')
-    parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSID session cookie value')
+    parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
