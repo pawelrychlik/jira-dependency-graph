@@ -80,7 +80,11 @@ def build_graph_data(start_issue_key, jira, excludes):
         else:
             log(issue_key + ' <= ' + link_type + ' <= ' + linked_issue_key)
 
-        node = '"%s"->"%s"[label="%s"]' % (issue_key, linked_issue_key, link_type)
+        extra = ""
+        if link_type == "blocks":
+            extra = ',color="red"'
+
+        node = '"%s"->"%s"[label="%s"%s]' % (issue_key, linked_issue_key, link_type, extra)
         return linked_issue_key, node
 
     # since the graph can be cyclic we need to prevent infinite recursion
