@@ -68,6 +68,9 @@ def build_graph_data(start_issue_key, jira, excludes):
         else:
             return
 
+        if direction == 'inward':
+            return
+
         linked_issue = link[direction + 'Issue']
         linked_issue_key = get_key(linked_issue)
         link_type = link['type'][direction]
