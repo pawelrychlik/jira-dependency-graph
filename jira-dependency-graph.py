@@ -54,7 +54,7 @@ class JiraSearch(object):
         return content['issues']
 
 
-def build_graph_data(start_issue_key, jira, excludes, show_directions):
+def build_graph_data(start_issue_key, jira, excludes, show_directions, directions):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -67,6 +67,9 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions):
         elif link.has_key('inwardIssue'):
             direction = 'inward'
         else:
+            return
+
+        if direction not in directions:
             return
 
         linked_issue = link[direction + 'Issue']
@@ -85,12 +88,11 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions):
         if link_type == "blocks":
             extra = ',color="red"'
 
-        node = '"%s"->"%s"[label="%s"%s]' % (issue_key, linked_issue_key, link_type, extra)
+        if direction not in show_directions:
+            node = None
+        else:
+            node = '"%s"->"%s"[label="%s"%s]' % (issue_key, linked_issue_key, link_type, extra)
 
-        if direction == 'inward' and not 'inward' in show_directions:
-            node = None
-        if direction == 'outward' and not 'outward' in show_directions:
-            node = None
 
         return linked_issue_key, node
 
@@ -166,7 +168,8 @@ def parse_args():
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
     parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
-    parser.add_argument('-d', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward,outward)')
+    parser.add_argument('-s', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward,outward)')
+    parser.add_argument('-d', '--directions', dest='directions', default=['inward', 'outward'], help='which directions to walk (inward,outward)')
     parser.add_argument('issue', nargs='?', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
 
     return parser.parse_args()
@@ -184,7 +187,7 @@ def main():
 
     jira = JiraSearch(options.jira_url, auth)
 
-    graph = build_graph_data(options.issue, jira, options.excludes, options.show_directions)
+    graph = build_graph_data(options.issue, jira, options.excludes, options.show_directions, options.directions)
 
     if options.local:
         print_graph(graph)
