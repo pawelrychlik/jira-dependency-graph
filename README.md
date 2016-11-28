@@ -1,7 +1,7 @@
 jira-dependency-graph
 =====================
 
-Graph visualizer for dependencies between JIRA tickets. Takes into account subtasks and issuelinks.
+Graph visualizer for dependencies between JIRA tickets. Takes into account subtasks and issue links.
 
 Uses JIRA rest API v2 for fetching information on issues.
 Uses [Google Chart API](https://developers.google.com/chart/) for graphical presentation.
@@ -57,7 +57,7 @@ If you have issues with the Google Graphviz API limitations you can use your loc
     $ cd jira-dependency-graph
     $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
 
-Advanved Usage:
+Advanced Usage:
 ===============
 In case you have specific issue links you don't want to see in your graph, you can exclude them:
 
@@ -70,4 +70,4 @@ Notes:
 ======
 Based on: [draw-chart.py](https://developer.atlassian.com/download/attachments/4227078/draw-chart.py) and [Atlassian JIRA development documentation](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+API+Version+2+Tutorial#JIRARESTAPIVersion2Tutorial-Example#1:GraphingImageLinks), which seemingly was no longer compatible with JIRA REST API Version 2.
 
-There is a limit on the query lenght: "The longest URL that Google accepts in a chart GET request is 2048 characters in length, after URL-encoding" (from [faq](https://developers.google.com/chart/image/faq)).
+There is a limit on the query length: "The longest URL that Google accepts in a chart GET request is 2048 characters in length, after URL-encoding" (from [faq](https://developers.google.com/chart/image/faq)).
