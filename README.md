@@ -13,37 +13,39 @@ Requirements:
 
 Usage:
 ======
-    $ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
-    $ cd jira-dependency-graph
-    $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site issue-key
+```bash
+$ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
+$ cd jira-dependency-graph
+$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site issue-key
 
-    # e.g.:
-    $ python jira-dependency-graph.py --user=pawelrychlik --password=s3cr3t --jira=https://your-company.jira.com JIRATICKET-718
+# e.g.:
+$ python jira-dependency-graph.py --user=pawelrychlik --password=s3cr3t --jira=https://your-company.jira.com JIRATICKET-718
     
-    Fetching JIRATICKET-2451
-    JIRATICKET-2451 <= is blocked by <= JIRATICKET-3853
-    JIRATICKET-2451 <= is blocked by <= JIRATICKET-3968
-    JIRATICKET-2451 <= is blocked by <= JIRATICKET-3126
-    JIRATICKET-2451 <= is blocked by <= JIRATICKET-2977
-    Fetching JIRATICKET-3853
-    JIRATICKET-3853 => blocks => JIRATICKET-2451
-    JIRATICKET-3853 <= relates to <= JIRATICKET-3968
-    Fetching JIRATICKET-3968
-    JIRATICKET-3968 => blocks => JIRATICKET-2451
-    JIRATICKET-3968 => relates to => JIRATICKET-3853
-    Fetching JIRATICKET-3126
-    JIRATICKET-3126 => blocks => JIRATICKET-2451
-    JIRATICKET-3126 => testing discovered => JIRATICKET-3571
-    Fetching JIRATICKET-3571
-    JIRATICKET-3571 <= discovered while testing <= JIRATICKET-3126
-    Fetching JIRATICKET-2977
-    JIRATICKET-2977 => blocks => JIRATICKET-2451
+Fetching JIRATICKET-2451
+JIRATICKET-2451 <= is blocked by <= JIRATICKET-3853
+JIRATICKET-2451 <= is blocked by <= JIRATICKET-3968
+JIRATICKET-2451 <= is blocked by <= JIRATICKET-3126
+JIRATICKET-2451 <= is blocked by <= JIRATICKET-2977
+Fetching JIRATICKET-3853
+JIRATICKET-3853 => blocks => JIRATICKET-2451
+JIRATICKET-3853 <= relates to <= JIRATICKET-3968
+Fetching JIRATICKET-3968
+JIRATICKET-3968 => blocks => JIRATICKET-2451
+JIRATICKET-3968 => relates to => JIRATICKET-3853
+Fetching JIRATICKET-3126
+JIRATICKET-3126 => blocks => JIRATICKET-2451
+JIRATICKET-3126 => testing discovered => JIRATICKET-3571
+Fetching JIRATICKET-3571
+JIRATICKET-3571 <= discovered while testing <= JIRATICKET-3126
+Fetching JIRATICKET-2977
+JIRATICKET-2977 => blocks => JIRATICKET-2451
 
-    Google Chart request:
-    http://chart.apis.google.com/chart?cht=gv&chl=digraph{"JIRATICKET-2451"->"JIRATICKET-3853"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3968"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3126"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-2977"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-3853"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3853"->"JIRATICKET-3968"[arrowhead=empty][label="relates+to"];"JIRATICKET-3968"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3968"->"JIRATICKET-3853"[arrowhead=empty][label="relates+to"];"JIRATICKET-3126"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3126"->"JIRATICKET-3571"[arrowhead=empty][label="testing+discovered"];"JIRATICKET-3571"->"JIRATICKET-3126"[arrowhead=empty][label="discovered+while+testing"]    ;"JIRATICKET-2977"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"]}
+Google Chart request:
+http://chart.apis.google.com/chart?cht=gv&chl=digraph{"JIRATICKET-2451"->"JIRATICKET-3853"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3968"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3126"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-2977"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-3853"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3853"->"JIRATICKET-3968"[arrowhead=empty][label="relates+to"];"JIRATICKET-3968"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3968"->"JIRATICKET-3853"[arrowhead=empty][label="relates+to"];"JIRATICKET-3126"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3126"->"JIRATICKET-3571"[arrowhead=empty][label="testing+discovered"];"JIRATICKET-3571"->"JIRATICKET-3126"[arrowhead=empty][label="discovered+while+testing"]    ;"JIRATICKET-2977"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"]}
 
-    Writing to issue_graph.png
+Writing to issue_graph.png
 
+```
 Result:
 ![Example result](examples/issue_graph.png)
 
