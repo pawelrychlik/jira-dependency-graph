@@ -9,7 +9,7 @@ Uses [Google Chart API](https://developers.google.com/chart/) for graphical pres
 Requirements:
 =============
 * Python 2.6+
-* [restkit](https://github.com/benoitc/restkit)
+* [requests](http://docs.python-requests.org/en/master/)
 
 Usage:
 ======
