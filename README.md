@@ -55,15 +55,19 @@ Local Usage:
 ============
 If you have issues with the Google Graphviz API limitations you can use your local graphviz installation like this:
 
-    $ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
-    $ cd jira-dependency-graph
-    $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
+```bash
+$ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
+$ cd jira-dependency-graph
+$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
+```
 
 Advanced Usage:
 ===============
 In case you have specific issue links you don't want to see in your graph, you can exclude them:
 
-    $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --exclude-link 'is required by' --exclude-link 'duplicates' issue-key
+```bash
+$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --exclude-link 'is required by' --exclude-link 'duplicates' issue-key
+```
 
 The grapher will still walk the link, just exclude the edge. This especially useful for bidirectional links and you only
 want to see one of them, e.g. *depends on* and *is required by*.
