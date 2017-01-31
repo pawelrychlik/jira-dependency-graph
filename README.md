@@ -22,7 +22,7 @@ $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira
 
 # e.g.:
 $ python jira-dependency-graph.py --user=pawelrychlik --password=s3cr3t --jira=https://your-company.jira.com JIRATICKET-718
-    
+
 Fetching JIRATICKET-2451
 JIRATICKET-2451 <= is blocked by <= JIRATICKET-3853
 JIRATICKET-2451 <= is blocked by <= JIRATICKET-3968
@@ -63,6 +63,9 @@ $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira
 
 Advanced Usage:
 ===============
+
+### Excluding Links
+
 In case you have specific issue links you don't want to see in your graph, you can exclude them:
 
 ```bash
@@ -71,6 +74,25 @@ $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira
 
 The grapher will still walk the link, just exclude the edge. This especially useful for bidirectional links and you only
 want to see one of them, e.g. *depends on* and *is required by*.
+
+### Including Issues
+
+In order to only specify issues with a certain prefix pass in `--issue-include <XXX>` and all tickets will be checked that they match the prefix `XXX`.
+
+### Authentication
+
+It is possible to either use the username/password combination or to login via the browser passing in `--cookie <JSESSIONID>`. This logins via the browser and is useful in scenarios where Kerberos authentication is required.
+
+### Closed Issues
+
+By passing in `--ignore-closed` the system will ignore any ticket that is closed.
+
+### Multiple Issues
+
+Multiple issue-keys can be passed in via space separated format e.g.
+```bash
+$ python jira-dependency-graph.py --cookie <JSESSIONID> issue-key1 issue-key2
+```
 
 Notes:
 ======
