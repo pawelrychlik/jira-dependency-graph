@@ -61,6 +61,18 @@ $ cd jira-dependency-graph
 $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
 ```
 
+*Note*: Its possible that the graph produced is too wide if you have a number of issues. In this case, it is better to firstly pipe the graph to a 'dot' text file e.g.
+
+```bash
+$ python jira-dependency-graph.py --jira=url-of-your-jira-site --local issue-key > graph.dot
+```
+
+and then process it using `unflatten`:
+
+```bash
+unflatten -f -l 4 -c 16 graph.dot  | dot | gvpack -array_t6 | neato -s -n2 -Tpng -o graph.png
+```
+
 Advanced Usage:
 ===============
 

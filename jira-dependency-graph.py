@@ -122,6 +122,12 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         children = []
         fields = issue['fields']
         seen.append(issue_key)
+
+        if ignore_closed:
+            log('Verifying issue key ' + issue_key + ' is not closed : ' + issue['fields']['status']['name'])
+            if issue['fields']['status']['name'] in 'Closed':
+                return graph
+
         graph.append('"%s(%s)"' % (issue_key, fields['summary']))
 
         if fields['issuetype']['name'] == 'Epic':
