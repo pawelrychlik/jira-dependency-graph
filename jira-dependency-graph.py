@@ -5,6 +5,7 @@ from __future__ import print_function
 import argparse
 import json
 import sys
+import getpass
 
 import requests
 
@@ -15,6 +16,7 @@ from collections import OrderedDict
 # is only about 5 lines.
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart?'
+MAX_SUMMARY_LENGTH = 30
 
 
 def log(*args):
@@ -62,7 +64,13 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     """
     def get_key(issue):
         return issue['key']
-
+    
+    def create_node_text(issue_key, summary):
+        if len(summary) > MAX_SUMMARY_LENGTH:
+            summary = summary[:MAX_SUMMARY_LENGTH] + '...'
+        summary = summary.replace('"', '\\"')
+        return '"{}({})"'.format(issue_key, summary)
+    
     def process_link(fields, issue_key, link):
         if link.has_key('outwardIssue'):
             direction = 'outward'
@@ -108,7 +116,10 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             node = None
         else:
             log ("Linked issue summary  " + linked_issue['fields']['summary'])
-            node = '"%s(%s)"->"%s(%s)"[label="%s"%s]' % (issue_key, fields['summary'], linked_issue_key, linked_issue['fields']['summary'], link_type, extra)
+            node = '{}->{}[label="{}"{}]'.format (
+                create_node_text(issue_key, fields['summary']), 
+                create_node_text(linked_issue_key, linked_issue['fields']['summary']), 
+                link_type, extra)
 
 
         return linked_issue_key, node
@@ -128,21 +139,25 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             if issue['fields']['status']['name'] in 'Closed':
                 return graph
 
-        graph.append('"%s(%s)"' % (issue_key, fields['summary']))
+        graph.append(create_node_text(issue_key, fields['summary']))
 
         if fields['issuetype']['name'] == 'Epic':
             issues = jira.query('"Epic Link" = "%s"' % issue_key)
             for subtask in issues:
                 subtask_key = get_key(subtask)
                 log(subtask_key + ' => references epic => ' + issue_key)
-                node = '"%s(%s)"->"%s(%s)"[color=orange]' % (issue_key, fields['summary'], subtask_key, subtask['fields']['summary'] )
+                node = '{}->{}[color=orange]'.format(
+                    create_node_text(issue_key, fields['summary']), 
+                    create_node_text(subtask_key, subtask['fields']['summary']) )
                 graph.append(node)
                 children.append(subtask_key)
         if fields.has_key('subtasks'):
             for subtask in fields['subtasks']:
                 subtask_key = get_key(subtask)
                 log(issue_key + ' => has subtask => ' + subtask_key)
-                node = '"%s(%s)"->"%s(%s)"[color=blue][label="subtask"]' % (issue_key, fields['summary'], subtask_key, subtask['fields']['summary'])
+                node = '{}->{}[color=blue][label="subtask"]'.format (
+                        create_node_text(issue_key, fields['summary']), 
+                        create_node_text(subtask_key, subtask['fields']['summary']))
                 graph.append(node)
                 children.append(subtask_key)
         if fields.has_key('issuelinks'):
@@ -187,8 +202,8 @@ def print_graph(graph_data):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--user', dest='user', default='admin', help='Username to access JIRA')
-    parser.add_argument('-p', '--password', dest='password', default='admin', help='Password to access JIRA')
+    parser.add_argument('-u', '--user', dest='user', default=None, help='Username to access JIRA')
+    parser.add_argument('-p', '--password', dest='password', default=None, help='Password to access JIRA')
     parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
@@ -217,7 +232,11 @@ def main():
         auth = options.cookie
     else:
         # Basic Auth is usually easier for scripts like this to deal with than Cookies.
-        auth = (options.user, options.password)
+        user = options.user if options.user is not None \
+                    else raw_input('Username: ')
+        password = options.password if options.password is not None \
+                    else getpass.getpass('Password: ')
+        auth = (user, password)
 
     jira = JiraSearch(options.jira_url, auth)
 
