@@ -233,7 +233,7 @@ def main():
     else:
         # Basic Auth is usually easier for scripts like this to deal with than Cookies.
         user = options.user if options.user is not None \
-                    else getpass.getuser('Username: ')
+                    else raw_input('Username: ')
         password = options.password if options.password is not None \
                     else getpass.getpass('Password: ')
         auth = (user, password)
