@@ -64,13 +64,16 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     """
     def get_key(issue):
         return issue['key']
-    
+
     def create_node_text(issue_key, summary):
-        if len(summary) > MAX_SUMMARY_LENGTH:
+        # truncate long labels with "...", but only if the three dots are
+        # replacing more than two characters -- otherwise the truncated
+        # label would be taking more space than the original.
+        if len(summary) > MAX_SUMMARY_LENGTH+2:
             summary = summary[:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
         return '"{}({})"'.format(issue_key, summary)
-    
+
     def process_link(fields, issue_key, link):
         if link.has_key('outwardIssue'):
             direction = 'outward'
