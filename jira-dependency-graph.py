@@ -58,7 +58,7 @@ class JiraSearch(object):
         return content['issues']
 
 
-def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed):
+def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -144,7 +144,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
 
         graph.append(create_node_text(issue_key, fields['summary']))
 
-        if fields['issuetype']['name'] == 'Epic':
+        if fields['issuetype']['name'] == 'Epic' and not ignore_epic:
             issues = jira.query('"Epic Link" = "%s"' % issue_key)
             for subtask in issues:
                 subtask_key = get_key(subtask)
@@ -211,6 +211,7 @@ def parse_args():
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
+    parser.add_argument('-e', '--ignore-epic', action='store_true', default=False, help='Don''t follow an Epic into it''s children issues')
     parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
     parser.add_argument('--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
     parser.add_argument('-i', '--issue-include', dest='includes', default='', help='Include issue keys')
@@ -245,7 +246,7 @@ def main():
 
     graph = []
     for issue in options.issues:
-        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed)
+        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed, options.ignore_epic)
 
     if options.local:
         print_graph(filter_duplicates(graph))

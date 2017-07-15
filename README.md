@@ -87,6 +87,14 @@ $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira
 The grapher will still walk the link, just exclude the edge. This especially useful for bidirectional links and you only
 want to see one of them, e.g. *depends on* and *is required by*.
 
+### Excluding Epics
+
+In case you want to exclude walking into issues of an Epic, you can ignore them:
+
+```bash
+$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --ignore-epic issue-key
+```
+
 ### Including Issues
 
 In order to only specify issues with a certain prefix pass in `--issue-include <XXX>` and all tickets will be checked that they match the prefix `XXX`.
