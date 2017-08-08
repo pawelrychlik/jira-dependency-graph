@@ -72,7 +72,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         if len(summary) > MAX_SUMMARY_LENGTH+2:
             summary = summary[:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
-        return '"{}({})"'.format(issue_key, summary)
+        return '"{}({})"'.format(issue_key, summary.encode('utf-8'))
 
     def process_link(fields, issue_key, link):
         if link.has_key('outwardIssue'):
@@ -120,8 +120,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         else:
             log ("Linked issue summary  " + linked_issue['fields']['summary'])
             node = '{}->{}[label="{}"{}]'.format (
-                create_node_text(issue_key, fields['summary']), 
-                create_node_text(linked_issue_key, linked_issue['fields']['summary']), 
+                create_node_text(issue_key, fields['summary']),
+                create_node_text(linked_issue_key, linked_issue['fields']['summary']),
                 link_type, extra)
 
 
@@ -150,7 +150,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 subtask_key = get_key(subtask)
                 log(subtask_key + ' => references epic => ' + issue_key)
                 node = '{}->{}[color=orange]'.format(
-                    create_node_text(issue_key, fields['summary']), 
+                    create_node_text(issue_key, fields['summary']),
                     create_node_text(subtask_key, subtask['fields']['summary']) )
                 graph.append(node)
                 children.append(subtask_key)
@@ -159,7 +159,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 subtask_key = get_key(subtask)
                 log(issue_key + ' => has subtask => ' + subtask_key)
                 node = '{}->{}[color=blue][label="subtask"]'.format (
-                        create_node_text(issue_key, fields['summary']), 
+                        create_node_text(issue_key, fields['summary']),
                         create_node_text(subtask_key, subtask['fields']['summary']))
                 graph.append(node)
                 children.append(subtask_key)
