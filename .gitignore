@@ -3,3 +3,7 @@
 !*.py
 !*.md
 !.gitignore
+
+# Intellij
+.idea/
+*.iws
