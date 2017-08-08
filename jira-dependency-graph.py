@@ -191,8 +191,6 @@ def create_graph_image(graph_data, image_file):
     print('Google Chart request:')
     print(chart_url)
 
-    #response = requests.get(chart_url)
-
     response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
 
     with open(image_file, 'w+') as image:
