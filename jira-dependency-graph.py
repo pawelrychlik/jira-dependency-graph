@@ -15,7 +15,7 @@ from collections import OrderedDict
 # command line options, formatting graphviz, calling Google Charts, etc. The actual JIRA REST-specific code
 # is only about 5 lines.
 
-GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart?'
+GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
 
 
@@ -185,12 +185,15 @@ def create_graph_image(graph_data, image_file):
 
         [1]: http://code.google.com/apis/chart/docs/gallery/graphviz.html
     """
-    chart_url = GOOGLE_CHART_URL + 'cht=gv&chl=digraph{%s}' % ';'.join(graph_data)
+    digraph = 'digraph{%s}' % ';'.join(graph_data)
+    chart_url = GOOGLE_CHART_URL + 'cht=gv&chl=' + digraph
 
     print('Google Chart request:')
     print(chart_url)
 
-    response = requests.get(chart_url)
+    #response = requests.get(chart_url)
+
+    response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
 
     with open(image_file, 'w+') as image:
         print('Writing to ' + image_file)
