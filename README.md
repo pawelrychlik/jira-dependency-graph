@@ -21,8 +21,8 @@ Usage:
 ```bash
 $ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
 $ virtualenv .virtualenv && source .virtualenv/bin/activate # OPTIONAL
-$ pip install -r requirements.txt
 $ cd jira-dependency-graph
+$ pip install -r requirements.txt
 $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site issue-key
 
 # e.g.:
