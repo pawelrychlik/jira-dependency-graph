@@ -186,10 +186,6 @@ def create_graph_image(graph_data, image_file):
         [1]: http://code.google.com/apis/chart/docs/gallery/graphviz.html
     """
     digraph = 'digraph{%s}' % ';'.join(graph_data)
-    chart_url = GOOGLE_CHART_URL + '?cht=gv&chl=' + digraph
-
-    print('Google Chart request:')
-    print(chart_url)
 
     response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
 

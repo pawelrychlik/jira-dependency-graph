@@ -47,9 +47,6 @@ JIRATICKET-3571 <= discovered while testing <= JIRATICKET-3126
 Fetching JIRATICKET-2977
 JIRATICKET-2977 => blocks => JIRATICKET-2451
 
-Google Chart request:
-http://chart.apis.google.com/chart?cht=gv&chl=digraph{"JIRATICKET-2451"->"JIRATICKET-3853"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3968"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-3126"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-2451"->"JIRATICKET-2977"[arrowhead=empty][label="is+blocked+by"];"JIRATICKET-3853"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3853"->"JIRATICKET-3968"[arrowhead=empty][label="relates+to"];"JIRATICKET-3968"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3968"->"JIRATICKET-3853"[arrowhead=empty][label="relates+to"];"JIRATICKET-3126"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"];"JIRATICKET-3126"->"JIRATICKET-3571"[arrowhead=empty][label="testing+discovered"];"JIRATICKET-3571"->"JIRATICKET-3126"[arrowhead=empty][label="discovered+while+testing"]    ;"JIRATICKET-2977"->"JIRATICKET-2451"[arrowhead=empty][label="blocks"]}
-
 Writing to issue_graph.png
 
 ```
