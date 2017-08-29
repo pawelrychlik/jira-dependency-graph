@@ -1,5 +1,25 @@
-*
-!*/
-!*.py
-!*.md
-!.gitignore
+# OS / IDE specific
+.DS_Store
+.idea
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt

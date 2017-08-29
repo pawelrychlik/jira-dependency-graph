@@ -6,6 +6,11 @@ Graph visualizer for dependencies between JIRA tickets. Takes into account subta
 Uses JIRA rest API v2 for fetching information on issues.
 Uses [Google Chart API](https://developers.google.com/chart/) for graphical presentation.
 
+Example output
+==============
+
+![Example graph](examples/issue_graph_complex.png)
+
 Requirements:
 =============
 * Python 2.6+
