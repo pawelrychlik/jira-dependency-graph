@@ -27,7 +27,10 @@ class JiraSearch(object):
     """ This factory will create the actual method used to fetch issues from JIRA. This is really just a closure that saves us having
         to pass a bunch of parameters all over the place all the time. """
 
+    __base_url = None
+
     def __init__(self, url, auth):
+        self.__base_url = url
         self.url = url + '/rest/api/latest'
         self.auth = auth
         self.fields = ','.join(['key', 'summary', 'assignee', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
@@ -57,6 +60,8 @@ class JiraSearch(object):
         content = response.json()
         return content['issues']
 
+    def get_issue_uri(self, issue_key):
+        return self.__base_url + '/browse/' + issue_key
 
 def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
@@ -65,14 +70,24 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     def get_key(issue):
         return issue['key']
 
-    def create_node_text(issue_key, summary):
+    def get_status_color(status_field):
+        if status_field['statusCategory']['name'].upper() in ['IN PROGRESS']:
+            return 'yellow'
+        elif status_field['statusCategory']['name'].upper() in ['DONE']:
+            return 'green'
+        return 'white'
+
+    def create_node_text(issue_key, summary, status, islink):
         # truncate long labels with "...", but only if the three dots are
         # replacing more than two characters -- otherwise the truncated
         # label would be taking more space than the original.
         if len(summary) > MAX_SUMMARY_LENGTH+2:
             summary = summary[:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
-        return '"{}({})"'.format(issue_key, summary.encode('utf-8'))
+        log('node ' + issue_key + ' status = ' + str(status))
+        if islink:
+            return '"{}\\n({})"'.format(issue_key, summary.encode('utf-8'))
+        return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary.encode('utf-8'), jira.get_issue_uri(issue_key), get_status_color(status))
 
     def process_link(fields, issue_key, link):
         if link.has_key('outwardIssue'):
@@ -120,8 +135,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         else:
             log ("Linked issue summary  " + linked_issue['fields']['summary'])
             node = '{}->{}[label="{}"{}]'.format (
-                create_node_text(issue_key, fields['summary']),
-                create_node_text(linked_issue_key, linked_issue['fields']['summary']),
+                create_node_text(issue_key, fields['summary'], fields['status'], True),
+                create_node_text(linked_issue_key, linked_issue['fields']['summary'], linked_issue['fields']['status'], True),
                 link_type, extra)
 
 
@@ -142,7 +157,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             if issue['fields']['status']['name'] in 'Closed':
                 return graph
 
-        graph.append(create_node_text(issue_key, fields['summary']))
+        graph.append(create_node_text(issue_key, fields['summary'], fields['status'], False))
 
         if fields['issuetype']['name'] == 'Epic' and not ignore_epic:
             issues = jira.query('"Epic Link" = "%s"' % issue_key)
@@ -150,8 +165,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 subtask_key = get_key(subtask)
                 log(subtask_key + ' => references epic => ' + issue_key)
                 node = '{}->{}[color=orange]'.format(
-                    create_node_text(issue_key, fields['summary']),
-                    create_node_text(subtask_key, subtask['fields']['summary']) )
+                    create_node_text(issue_key, fields['summary'], fields['status'], True),
+                    create_node_text(subtask_key, subtask['fields']['summary'], subtask['fields']['status']) )
                 graph.append(node)
                 children.append(subtask_key)
         if fields.has_key('subtasks'):
@@ -159,8 +174,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 subtask_key = get_key(subtask)
                 log(issue_key + ' => has subtask => ' + subtask_key)
                 node = '{}->{}[color=blue][label="subtask"]'.format (
-                        create_node_text(issue_key, fields['summary']),
-                        create_node_text(subtask_key, subtask['fields']['summary']))
+                        create_node_text(issue_key, fields['summary'], fields['status'], True),
+                        create_node_text(subtask_key, subtask['fields']['summary'], subtask['fields']['status'], True))
                 graph.append(node)
                 children.append(subtask_key)
         if fields.has_key('issuelinks'):
