@@ -179,13 +179,13 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     return walk(start_issue_key, [])
 
 
-def create_graph_image(graph_data, image_file):
+def create_graph_image(graph_data, image_file, node_shape):
     """ Given a formatted blob of graphviz chart data[1], make the actual request to Google
         and store the resulting image to disk.
 
         [1]: http://code.google.com/apis/chart/docs/gallery/graphviz.html
     """
-    digraph = 'digraph{%s}' % ';'.join(graph_data)
+    digraph = 'digraph{node [shape=' + node_shape +'];%s}' % ';'.join(graph_data)
 
     response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
 
@@ -196,8 +196,8 @@ def create_graph_image(graph_data, image_file):
     return image_file
 
 
-def print_graph(graph_data):
-    print('digraph{%s}' % ';'.join(graph_data))
+def print_graph(graph_data, node_shape):
+    print('digraph{\nnode [shape=' + node_shape +'];\n\n%s\n}' % ';\n'.join(graph_data))
 
 
 def parse_args():
@@ -214,6 +214,7 @@ def parse_args():
     parser.add_argument('-i', '--issue-include', dest='includes', default='', help='Include issue keys')
     parser.add_argument('-s', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward,outward)')
     parser.add_argument('-d', '--directions', dest='directions', default=['inward', 'outward'], help='which directions to walk (inward,outward)')
+    parser.add_argument('-ns', '--node-shape', dest='node_shape', default='ellipse', help='which shape to use for nodes (circle, box, etc)')
     parser.add_argument('issues', nargs='+', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
 
     return parser.parse_args()
@@ -246,9 +247,9 @@ def main():
         graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed, options.ignore_epic)
 
     if options.local:
-        print_graph(filter_duplicates(graph))
+        print_graph(filter_duplicates(graph), options.node_shape)
     else:
-        create_graph_image(filter_duplicates(graph), options.image_file)
+        create_graph_image(filter_duplicates(graph), options.image_file, options.node_shape)
 
 if __name__ == '__main__':
     main()
