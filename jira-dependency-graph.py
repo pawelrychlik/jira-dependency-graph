@@ -106,18 +106,15 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         link_type = link['type'][direction]
 
         if ignore_closed:
-            if 'inwardIssue' in link:
-                log('Verifying linked key is not closed : ' + link['inwardIssue']['fields']['status']['name'])
-                if link['inwardIssue']['fields']['status']['name'] in 'Closed':
-                    return
-            if 'outwardIssue' in link:
-                log('Verifying linked key is not closed : ' + link['outwardIssue']['fields']['status']['name'])
-                if link['outwardIssue']['fields']['status']['name'] in 'Closed':
-                    return
+            if ('inwardIssue' in link) and (link['inwardIssue']['fields']['status']['name'] in 'Closed'):
+                log('Skipping ' + linked_issue_key + ' - linked key is Closed')
+                return
+            if ('outwardIssue' in link) and (link['outwardIssue']['fields']['status']['name'] in 'Closed'):
+                log('Skipping ' + linked_issue_key + ' - linked key is Closed')
+                return
 
         if includes not in linked_issue_key:
             return
-
 
         if link_type in excludes:
             return linked_issue_key, None
