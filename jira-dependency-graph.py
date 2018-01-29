@@ -77,7 +77,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             return 'green'
         return 'white'
 
-    def create_node_text(issue_key, fields, islink):
+    def create_node_text(issue_key, fields, islink=True):
         summary = fields['summary']
         status = fields['status']
         # truncate long labels with "...", but only if the three dots are
@@ -130,8 +130,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         else:
             # log("Linked issue summary " + linked_issue['fields']['summary'])
             node = '{}->{}[label="{}"{}]'.format(
-                create_node_text(issue_key, fields, True),
-                create_node_text(linked_issue_key, linked_issue['fields'], True),
+                create_node_text(issue_key, fields),
+                create_node_text(linked_issue_key, linked_issue['fields']),
                 link_type, extra)
 
         return linked_issue_key, node
@@ -154,7 +154,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             log('Skipping ' + issue_key + ' - not traversing to a different project')
             return graph
 
-        graph.append(create_node_text(issue_key, fields, False))
+        graph.append(create_node_text(issue_key, fields, islink=False))
 
         if not ignore_subtasks:
             if fields['issuetype']['name'] == 'Epic' and not ignore_epic:
@@ -163,8 +163,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                     subtask_key = get_key(subtask)
                     log(subtask_key + ' => references epic => ' + issue_key)
                     node = '{}->{}[color=orange]'.format(
-                        create_node_text(issue_key, fields, True),
-                        create_node_text(subtask_key, subtask['fields'], True))
+                        create_node_text(issue_key, fields),
+                        create_node_text(subtask_key, subtask['fields']))
                     graph.append(node)
                     children.append(subtask_key)
             if fields.has_key('subtasks') and not ignore_subtasks:
@@ -172,8 +172,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                     subtask_key = get_key(subtask)
                     log(issue_key + ' => has subtask => ' + subtask_key)
                     node = '{}->{}[color=blue][label="subtask"]'.format (
-                            create_node_text(issue_key, fields, True),
-                            create_node_text(subtask_key, subtask['fields'], True))
+                            create_node_text(issue_key, fields),
+                            create_node_text(subtask_key, subtask['fields']))
                     graph.append(node)
                     children.append(subtask_key)
 
