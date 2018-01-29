@@ -154,13 +154,12 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         fields = issue['fields']
         seen.append(issue_key)
 
-        if ignore_closed:
-            log('Verifying issue key ' + issue_key + ' is not closed : ' + issue['fields']['status']['name'])
-            if issue['fields']['status']['name'] in 'Closed':
-                return graph
+        if ignore_closed and (fields['status']['name'] in 'Closed'):
+            log('Skipping ' + issue_key + ' - it is Closed')
+            return graph
 
         if not traverse and ((project_prefix + '-') not in issue_key):
-            log('Skipping ' + issue_key + ' by not traversing to a different project (than ' + project_prefix + ')')
+            log('Skipping ' + issue_key + ' - not traversing to a different project')
             return graph
 
         graph.append(create_node_text(issue_key, fields, False))
