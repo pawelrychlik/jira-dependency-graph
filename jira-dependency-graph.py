@@ -133,12 +133,13 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         if direction not in show_directions:
             node = None
         else:
-            log ("Linked issue summary  " + linked_issue['fields']['summary'])
-            node = '{}->{}[label="{}"{}]'.format (
+            log("Linked issue summary  " + linked_issue['fields']['summary'])
+            node = '{}->{}[label="{}"{}]'.format(
                 create_node_text(issue_key, fields['summary'], fields['status'], True),
                 create_node_text(linked_issue_key, linked_issue['fields']['summary'], linked_issue['fields']['status'], True),
-                link_type, extra)
-
+                link_type,
+                extra
+            )
 
         return linked_issue_key, node
 
@@ -166,7 +167,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 log(subtask_key + ' => references epic => ' + issue_key)
                 node = '{}->{}[color=orange]'.format(
                     create_node_text(issue_key, fields['summary'], fields['status'], True),
-                    create_node_text(subtask_key, subtask['fields']['summary'], subtask['fields']['status']) )
+                    create_node_text(subtask_key, subtask['fields']['summary'], subtask['fields']['status'], True))
                 graph.append(node)
                 children.append(subtask_key)
         if fields.has_key('subtasks'):
