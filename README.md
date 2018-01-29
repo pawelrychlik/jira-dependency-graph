@@ -24,7 +24,9 @@ $ virtualenv .virtualenv && source .virtualenv/bin/activate # OPTIONAL
 $ cd jira-dependency-graph
 $ pip install -r requirements.txt
 $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site issue-key
+```
 
+```
 # e.g.:
 $ python jira-dependency-graph.py --user=pawelrychlik --password=s3cr3t --jira=https://your-company.jira.com JIRATICKET-718
 
@@ -48,35 +50,19 @@ Fetching JIRATICKET-2977
 JIRATICKET-2977 => blocks => JIRATICKET-2451
 
 Writing to issue_graph.png
-
 ```
 Result:
 ![Example result](examples/issue_graph.png)
 
-Local Usage:
-============
-If you have issues with the Google Graphviz API limitations you can use your local graphviz installation like this:
-
-```bash
-$ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
-$ cd jira-dependency-graph
-$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
-```
-
-*Note*: Its possible that the graph produced is too wide if you have a number of issues. In this case, it is better to firstly pipe the graph to a 'dot' text file e.g.
-
-```bash
-$ python jira-dependency-graph.py --jira=url-of-your-jira-site --local issue-key > graph.dot
-```
-
-and then process it using `unflatten`:
-
-```bash
-unflatten -f -l 4 -c 16 graph.dot  | dot | gvpack -array_t6 | neato -s -n2 -Tpng -o graph.png
-```
 
 Advanced Usage:
 ===============
+
+List of all configuration options with descriptions:
+
+```
+python jira-dependency-graph.py --help
+```
 
 ### Excluding Links
 
@@ -116,8 +102,29 @@ Multiple issue-keys can be passed in via space separated format e.g.
 $ python jira-dependency-graph.py --cookie <JSESSIONID> issue-key1 issue-key2
 ```
 
+
+Usage without Google Graphviz API:
+============
+If you have issues with the Google Graphviz API limitations you can use your local graphviz installation like this:
+
+```bash
+$ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
+$ cd jira-dependency-graph
+$ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --local issue-key | dot -Tpng > issue_graph.png
+```
+
+*Note*: Its possible that the graph produced is too wide if you have a number of issues. In this case, it is better to firstly pipe the graph to a 'dot' text file e.g.
+
+```bash
+$ python jira-dependency-graph.py --jira=url-of-your-jira-site --local issue-key > graph.dot
+```
+
+and then process it using `unflatten`:
+
+```bash
+unflatten -f -l 4 -c 16 graph.dot  | dot | gvpack -array_t6 | neato -s -n2 -Tpng -o graph.png
+```
+
 Notes:
 ======
 Based on: [draw-chart.py](https://developer.atlassian.com/download/attachments/4227078/draw-chart.py) and [Atlassian JIRA development documentation](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+API+Version+2+Tutorial#JIRARESTAPIVersion2Tutorial-Example#1:GraphingImageLinks), which seemingly was no longer compatible with JIRA REST API Version 2.
-
-There is a limit on the query length: "The longest URL that Google accepts in a chart GET request is 2048 characters in length, after URL-encoding" (from [faq](https://developers.google.com/chart/image/faq)).
