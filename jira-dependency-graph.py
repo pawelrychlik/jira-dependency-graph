@@ -70,9 +70,10 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         return issue['key']
 
     def get_status_color(status_field):
-        if status_field['statusCategory']['name'].upper() in ['IN PROGRESS']:
+        status = status_field['statusCategory']['name'].upper()
+        if status == 'IN PROGRESS':
             return 'yellow'
-        elif status_field['statusCategory']['name'].upper() in ['DONE']:
+        elif status == 'DONE':
             return 'green'
         return 'white'
 
@@ -119,25 +120,19 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         if link_type in excludes:
             return linked_issue_key, None
 
-        if direction == 'outward':
-            log(issue_key + ' => ' + link_type + ' => ' + linked_issue_key)
-        else:
-            log(issue_key + ' <= ' + link_type + ' <= ' + linked_issue_key)
+        arrow = ' => ' if direction == 'outward' else ' <= '
+        log(issue_key + arrow + link_type + arrow + linked_issue_key)
 
-        extra = ""
-        if link_type == "blocks":
-            extra = ',color="red"'
+        extra = ',color="red"' if link_type == "blocks" else ""
 
         if direction not in show_directions:
             node = None
         else:
-            log("Linked issue summary  " + linked_issue['fields']['summary'])
+            # log("Linked issue summary " + linked_issue['fields']['summary'])
             node = '{}->{}[label="{}"{}]'.format(
                 create_node_text(issue_key, fields, True),
                 create_node_text(linked_issue_key, linked_issue['fields'], True),
-                link_type,
-                extra
-            )
+                link_type, extra)
 
         return linked_issue_key, node
 
