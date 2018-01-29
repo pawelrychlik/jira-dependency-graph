@@ -158,8 +158,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             if issue['fields']['status']['name'] in 'Closed':
                 return graph
 
-        if not traverse and ((proj_start + '-') not in issue_key):
-            log('Skipping ' + issue_key + ' by not traversing to a different project (than ' + proj_start + ')')
+        if not traverse and ((project_prefix + '-') not in issue_key):
+            log('Skipping ' + issue_key + ' by not traversing to a different project (than ' + project_prefix + ')')
             return graph
 
         graph.append(create_node_text(issue_key, fields['summary'], fields['status'], False))
@@ -198,7 +198,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             walk(child, graph)
         return graph
 
-    proj_start = start_issue_key.split('-', 1)[0]
+    project_prefix = start_issue_key.split('-', 1)[0]
     return walk(start_issue_key, [])
 
 
