@@ -55,7 +55,6 @@ class JiraSearch(object):
 
     def query(self, query):
         log('Querying ' + query)
-        # TODO comment
         response = self.get('/search', params={'jql': query, 'fields': self.fields})
         content = response.json()
         return content['issues']
@@ -86,7 +85,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         if len(summary) > MAX_SUMMARY_LENGTH+2:
             summary = summary[:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
-        log('node ' + issue_key + ' status = ' + str(status))
+        # log('node ' + issue_key + ' status = ' + str(status))
         if islink:
             return '"{}\\n({})"'.format(issue_key, summary.encode('utf-8'))
         return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary.encode('utf-8'), jira.get_issue_uri(issue_key), get_status_color(status))
