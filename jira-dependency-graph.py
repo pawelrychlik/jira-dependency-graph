@@ -11,9 +11,6 @@ import requests
 
 from collections import OrderedDict
 
-# Using REST is pretty simple. The vast majority of this code is about the "other stuff": dealing with
-# command line options, formatting graphviz, calling Google Charts, etc. The actual JIRA REST-specific code
-# is only about 5 lines.
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
@@ -24,8 +21,8 @@ def log(*args):
 
 
 class JiraSearch(object):
-    """ This factory will create the actual method used to fetch issues from JIRA. This is really just a closure that saves us having
-        to pass a bunch of parameters all over the place all the time. """
+    """ This factory will create the actual method used to fetch issues from JIRA. This is really just a closure that
+        saves us having to pass a bunch of parameters all over the place all the time. """
 
     __base_url = None
 
@@ -33,7 +30,7 @@ class JiraSearch(object):
         self.__base_url = url
         self.url = url + '/rest/api/latest'
         self.auth = auth
-        self.fields = ','.join(['key', 'summary', 'assignee', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
+        self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
 
     def get(self, uri, params={}):
         headers = {'Content-Type' : 'application/json'}
@@ -62,6 +59,7 @@ class JiraSearch(object):
     def get_issue_uri(self, issue_key):
         return self.__base_url + '/browse/' + issue_key
 
+
 def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic, ignore_subtasks, traverse):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
@@ -80,13 +78,13 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     def create_node_text(issue_key, fields, islink=True):
         summary = fields['summary']
         status = fields['status']
-        # truncate long labels with "...", but only if the three dots are
-        # replacing more than two characters -- otherwise the truncated
-        # label would be taking more space than the original.
-        if len(summary) > MAX_SUMMARY_LENGTH+2:
+        # truncate long labels with "...", but only if the three dots are replacing more than two characters
+        # -- otherwise the truncated label would be taking more space than the original.
+        if len(summary) > MAX_SUMMARY_LENGTH + 2:
             summary = summary[:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
         # log('node ' + issue_key + ' status = ' + str(status))
+
         if islink:
             return '"{}\\n({})"'.format(issue_key, summary.encode('utf-8'))
         return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary.encode('utf-8'), jira.get_issue_uri(issue_key), get_status_color(status))
@@ -236,12 +234,14 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def filter_duplicates(lst):
     # Enumerate the list to restore order lately; reduce the sorted list; restore order
     def append_unique(acc, item):
         return acc if acc[-1][1] == item[1] else acc.append(item) or acc
     srt_enum = sorted(enumerate(lst), key=lambda (i, val): val)
     return [item[1] for item in sorted(reduce(append_unique, srt_enum, [srt_enum[0]]))]
+
 
 def main():
     options = parse_args()
@@ -267,6 +267,7 @@ def main():
         print_graph(filter_duplicates(graph), options.node_shape)
     else:
         create_graph_image(filter_duplicates(graph), options.image_file, options.node_shape)
+
 
 if __name__ == '__main__':
     main()
