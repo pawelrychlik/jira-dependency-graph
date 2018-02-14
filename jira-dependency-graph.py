@@ -27,10 +27,11 @@ class JiraSearch(object):
 
     __base_url = None
 
-    def __init__(self, url, auth):
+    def __init__(self, url, auth, verify_ssl):
         self.__base_url = url
         self.url = url + '/rest/api/latest'
         self.auth = auth
+        self.verify_ssl = verify_ssl
         self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
 
     def get(self, uri, params={}):
@@ -38,9 +39,9 @@ class JiraSearch(object):
         url = self.url + uri
 
         if isinstance(self.auth, str):
-            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=False)
+            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.verify_ssl)
         else:
-            return requests.get(url, params=params, auth=self.auth, headers=headers, verify=False)
+            return requests.get(url, params=params, auth=self.auth, headers=headers, verify=self.verify_ssl)
 
     def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
@@ -238,9 +239,11 @@ def parse_args():
     parser.add_argument('-t', '--ignore-subtasks', action='store_true', default=False, help='Don''t include sub-tasks issues')
     parser.add_argument('-T', '--dont-traverse', dest='traverse', action='store_false', default=True, help='Do not traverse to other projects')
     parser.add_argument('-w', '--word-wrap', dest='word_wrap', action='store_true', help='Word wrap issue summaries instead of truncating them')
-    #parser.add_argument('-w', '--no-word-wrap', dest='word_wrap', action='store_false', help='Word wrap issue summaries instead of truncating them')
+    parser.add_argument('--verify-ssl', dest='verify_ssl', action='store_true', help='Verify SSL certs for requests')
+    parser.add_argument('--no-verify-ssl', dest='verify_ssl', action='store_false', help='Skip SSL cert verification for requests')
     parser.add_argument('issues', nargs='+', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
     parser.set_defaults(word_wrap=False)
+    parser.set_defaults(verify_ssl=True)
     return parser.parse_args()
 
 
@@ -266,7 +269,7 @@ def main():
                     else getpass.getpass('Password: ')
         auth = (user, password)
 
-    jira = JiraSearch(options.jira_url, auth)
+    jira = JiraSearch(options.jira_url, auth, options.verify_ssl)
 
     graph = []
     for issue in options.issues:
