@@ -15,6 +15,7 @@ Requirements:
 =============
 * Python 2.6+
 * [requests](http://docs.python-requests.org/en/master/)
+
 Or
 * [docker](https://docs.docker.com/install/)
 
