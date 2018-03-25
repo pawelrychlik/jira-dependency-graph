@@ -15,6 +15,8 @@ Requirements:
 =============
 * Python 2.6+
 * [requests](http://docs.python-requests.org/en/master/)
+Or
+* [docker](https://docs.docker.com/install/)
 
 Usage:
 ======
@@ -24,6 +26,14 @@ $ virtualenv .virtualenv && source .virtualenv/bin/activate # OPTIONAL
 $ cd jira-dependency-graph
 $ pip install -r requirements.txt
 $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site issue-key
+```
+
+Or if you prefer running in docker:
+```bash
+$ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
+$ cd jira-dependency-graph
+$ docker build -t jira .
+$ docker run -v $PWD/image:/out python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --image=/out/output.png issue-key
 ```
 
 ```
