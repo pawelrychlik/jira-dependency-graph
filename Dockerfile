@@ -1,4 +1,4 @@
-FROM python:2.7-stretch
+FROM python:2.7-alpine
 
 ADD jira-dependency-graph.py /jira/
 ADD requirements.txt /jira/
