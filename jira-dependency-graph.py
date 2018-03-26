@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 import getpass
+import textwrap
 
 import requests
 
@@ -26,10 +27,11 @@ class JiraSearch(object):
 
     __base_url = None
 
-    def __init__(self, url, auth):
+    def __init__(self, url, auth, no_verify_ssl):
         self.__base_url = url
         self.url = url + '/rest/api/latest'
         self.auth = auth
+        self.no_verify_ssl = no_verify_ssl
         self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
 
     def get(self, uri, params={}):
@@ -37,9 +39,9 @@ class JiraSearch(object):
         url = self.url + uri
 
         if isinstance(self.auth, str):
-            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers)
+            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.no_verify_ssl)
         else:
-            return requests.get(url, params=params, auth=self.auth, headers=headers)
+            return requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
 
     def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
@@ -59,8 +61,7 @@ class JiraSearch(object):
     def get_issue_uri(self, issue_key):
         return self.__base_url + '/browse/' + issue_key
 
-
-def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic, ignore_subtasks, traverse):
+def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -78,10 +79,16 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     def create_node_text(issue_key, fields, islink=True):
         summary = fields['summary']
         status = fields['status']
-        # truncate long labels with "...", but only if the three dots are replacing more than two characters
-        # -- otherwise the truncated label would be taking more space than the original.
-        if len(summary) > MAX_SUMMARY_LENGTH + 2:
-            summary = summary[:MAX_SUMMARY_LENGTH] + '...'
+        
+        if word_wrap == True:
+            if len(summary) > MAX_SUMMARY_LENGTH:
+                # split the summary into multiple lines adding a \n to each line
+                summary = textwrap.fill(fields['summary'], MAX_SUMMARY_LENGTH)
+        else:
+            # truncate long labels with "...", but only if the three dots are replacing more than two characters
+            # -- otherwise the truncated label would be taking more space than the original.
+            if len(summary) > MAX_SUMMARY_LENGTH + 2:
+                summary = fields['summary'][:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
         # log('node ' + issue_key + ' status = ' + str(status))
 
@@ -223,15 +230,16 @@ def parse_args():
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
     parser.add_argument('-e', '--ignore-epic', action='store_true', default=False, help='Don''t follow an Epic into it''s children issues')
     parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
-    parser.add_argument('--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
+    parser.add_argument('-ic', '--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
     parser.add_argument('-i', '--issue-include', dest='includes', default='', help='Include issue keys')
     parser.add_argument('-s', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward, outward)')
     parser.add_argument('-d', '--directions', dest='directions', default=['inward', 'outward'], help='which directions to walk (inward, outward)')
     parser.add_argument('-ns', '--node-shape', dest='node_shape', default='box', help='which shape to use for nodes (circle, box, ellipse, etc)')
     parser.add_argument('-t', '--ignore-subtasks', action='store_true', default=False, help='Don''t include sub-tasks issues')
     parser.add_argument('-T', '--dont-traverse', dest='traverse', action='store_false', default=True, help='Do not traverse to other projects')
+    parser.add_argument('-w', '--word-wrap', dest='word_wrap', default=False, action='store_true', help='Word wrap issue summaries instead of truncating them')
+    parser.add_argument('--no-verify-ssl', dest='no_verify_ssl', default=False, action='store_true', help='Don\'t verify SSL certs for requests')
     parser.add_argument('issues', nargs='+', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
-
     return parser.parse_args()
 
 
@@ -257,11 +265,11 @@ def main():
                     else getpass.getpass('Password: ')
         auth = (user, password)
 
-    jira = JiraSearch(options.jira_url, auth)
+    jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl)
 
     graph = []
     for issue in options.issues:
-        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed, options.ignore_epic, options.ignore_subtasks, options.traverse)
+        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed, options.ignore_epic, options.ignore_subtasks, options.traverse, options.word_wrap)
 
     if options.local:
         print_graph(filter_duplicates(graph), options.node_shape)
