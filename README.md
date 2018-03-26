@@ -34,7 +34,7 @@ Or if you prefer running in docker:
 $ git clone https://github.com/pawelrychlik/jira-dependency-graph.git
 $ cd jira-dependency-graph
 $ docker build -t jira .
-$ docker run -v $PWD/image:/out python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --image=/out/output.png issue-key
+$ docker run -v $PWD/out:/out jira python jira-dependency-graph.py --user=your-jira-username --password=your-jira-password --jira=url-of-your-jira-site --file=/out/output.png issue-key
 ```
 
 ```
