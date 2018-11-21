@@ -122,7 +122,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         if includes not in linked_issue_key:
             return
 
-        if link_type in excludes:
+        if link_type.strip() in excludes:
             return linked_issue_key, None
 
         arrow = ' => ' if direction == 'outward' else ' <= '
