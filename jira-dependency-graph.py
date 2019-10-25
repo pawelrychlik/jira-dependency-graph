@@ -3,15 +3,11 @@
 from __future__ import print_function
 
 import argparse
-import json
-import sys
 import getpass
+import sys
 import textwrap
 
 import requests
-
-from collections import OrderedDict
-
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
@@ -61,7 +57,9 @@ class JiraSearch(object):
     def get_issue_uri(self, issue_key):
         return self.__base_url + '/browse/' + issue_key
 
-def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap):
+
+def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, issue_excludes,
+                     ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -79,7 +77,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     def create_node_text(issue_key, fields, islink=True):
         summary = fields['summary']
         status = fields['status']
-        
+
         if word_wrap == True:
             if len(summary) > MAX_SUMMARY_LENGTH:
                 # split the summary into multiple lines adding a \n to each line
@@ -109,6 +107,10 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
 
         linked_issue = link[direction + 'Issue']
         linked_issue_key = get_key(linked_issue)
+        if linked_issue_key in issue_excludes:
+            log('Skipping ' + linked_issue_key + ' - explicitly excluded')
+            return
+
         link_type = link['type'][direction]
 
         if ignore_closed:
@@ -232,6 +234,7 @@ def parse_args():
     parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
     parser.add_argument('-ic', '--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
     parser.add_argument('-i', '--issue-include', dest='includes', default='', help='Include issue keys')
+    parser.add_argument('-xi', '--issue-exclude', dest='issue_excludes', action='append', default=[], help='Exclude issue keys; can be repeated for multiple issues')
     parser.add_argument('-s', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward, outward)')
     parser.add_argument('-d', '--directions', dest='directions', default=['inward', 'outward'], help='which directions to walk (inward, outward)')
     parser.add_argument('-ns', '--node-shape', dest='node_shape', default='box', help='which shape to use for nodes (circle, box, ellipse, etc)')
@@ -269,7 +272,9 @@ def main():
 
     graph = []
     for issue in options.issues:
-        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions, options.includes, options.closed, options.ignore_epic, options.ignore_subtasks, options.traverse, options.word_wrap)
+        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions,
+                                         options.includes, options.issue_excludes, options.closed, options.ignore_epic,
+                                         options.ignore_subtasks, options.traverse, options.word_wrap)
 
     if options.local:
         print_graph(filter_duplicates(graph), options.node_shape)

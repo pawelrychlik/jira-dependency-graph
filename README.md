@@ -98,6 +98,11 @@ $ python jira-dependency-graph.py --user=your-jira-username --password=your-jira
 
 In order to only specify issues with a certain prefix pass in `--issue-include <XXX>` and all tickets will be checked that they match the prefix `XXX`.
 
+### Excluding Issues
+
+By passing in `--issue-exclude`, or `-xi` the system will explicitly ignore the ticket. It can be repeated multiple times, e.g. `-xi MYPR-456 -x MYPR-999` to ignore both issues. 
+Use it as a last-resort only, when other means of exclusion do not suit your case, e.g. to omit a part of the graph for better readability.
+
 ### Authentication
 
 It is possible to either use the username/password combination or to login via the browser passing in `--cookie <JSESSIONID>`. This logins via the browser and is useful in scenarios where Kerberos authentication is required.
