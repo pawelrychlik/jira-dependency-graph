@@ -9,7 +9,7 @@ import textwrap
 
 import requests
 
-GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart'
+GOOGLE_CHART_URL = 'https://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
 
 
@@ -211,9 +211,11 @@ def create_graph_image(graph_data, image_file, node_shape):
 
     response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
 
-    with open(image_file, 'w+') as image:
+    with open(image_file, 'w+b') as image:
         print('Writing to ' + image_file)
-        image.write(response.content)
+        binary_format = bytearray(response.content)
+        image.write(binary_format)
+        image.close()
 
     return image_file
 
