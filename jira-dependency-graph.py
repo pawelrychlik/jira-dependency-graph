@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+
 
 import argparse
 import getpass
@@ -8,6 +8,7 @@ import sys
 import textwrap
 
 import requests
+from functools import reduce
 
 GOOGLE_CHART_URL = 'http://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
@@ -95,9 +96,9 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary.encode('utf-8'), jira.get_issue_uri(issue_key), get_status_color(status))
 
     def process_link(fields, issue_key, link):
-        if link.has_key('outwardIssue'):
+        if 'outwardIssue' in link:
             direction = 'outward'
-        elif link.has_key('inwardIssue'):
+        elif 'inwardIssue' in link:
             direction = 'inward'
         else:
             return
@@ -174,7 +175,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                         create_node_text(subtask_key, subtask['fields']))
                     graph.append(node)
                     children.append(subtask_key)
-            if fields.has_key('subtasks') and not ignore_subtasks:
+            if 'subtasks' in fields and not ignore_subtasks:
                 for subtask in fields['subtasks']:
                     subtask_key = get_key(subtask)
                     log(issue_key + ' => has subtask => ' + subtask_key)
@@ -184,7 +185,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                     graph.append(node)
                     children.append(subtask_key)
 
-        if fields.has_key('issuelinks'):
+        if 'issuelinks' in fields:
             for other_link in fields['issuelinks']:
                 result = process_link(fields, issue_key, other_link)
                 if result is not None:
@@ -250,7 +251,7 @@ def filter_duplicates(lst):
     # Enumerate the list to restore order lately; reduce the sorted list; restore order
     def append_unique(acc, item):
         return acc if acc[-1][1] == item[1] else acc.append(item) or acc
-    srt_enum = sorted(enumerate(lst), key=lambda (i, val): val)
+    srt_enum = sorted(enumerate(lst), key=lambda i_val: i_val[1])
     return [item[1] for item in sorted(reduce(append_unique, srt_enum, [srt_enum[0]]))]
 
 
@@ -263,7 +264,7 @@ def main():
     else:
         # Basic Auth is usually easier for scripts like this to deal with than Cookies.
         user = options.user if options.user is not None \
-                    else raw_input('Username: ')
+                    else input('Username: ')
         password = options.password if options.password is not None \
                     else getpass.getpass('Password: ')
         auth = (user, password)

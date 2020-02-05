@@ -13,7 +13,7 @@ Example output
 
 Requirements:
 =============
-* Python 2.6+
+* Python 3+
 * [requests](http://docs.python-requests.org/en/master/)
 
 Or
