@@ -88,7 +88,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             # -- otherwise the truncated label would be taking more space than the original.
             if len(summary) > MAX_SUMMARY_LENGTH + 2:
                 summary = fields['summary'][:MAX_SUMMARY_LENGTH] + '...'
-        summary = summary.replace('"', '\\"')
+        summary = summary.replace('"', '&#034;')
+        summary = summary.replace("'", "&#039;")
         # log('node ' + issue_key + ' status = ' + str(status))
 
         if islink:
