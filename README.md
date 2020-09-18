@@ -107,6 +107,14 @@ Use it as a last-resort only, when other means of exclusion do not suit your cas
 
 It is possible to either use the username/password combination or to login via the browser passing in `--cookie <JSESSIONID>`. This logins via the browser and is useful in scenarios where Kerberos authentication is required.
 
+If you are using Atlassian Cloud, use your API token instead of your account password. You can generate one with the following steps:
+
+1. Access https://id.atlassian.com/manage-profile/security/api-tokens.
+2. Click "Create API token".
+3. Copy the token and store it in a safe place.
+
+More details about API authentication is available in the [official documentation](https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/).
+
 ### Closed Issues
 
 By passing in `--ignore-closed` the system will ignore any ticket that is closed.
