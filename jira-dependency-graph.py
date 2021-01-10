@@ -55,6 +55,11 @@ class JiraSearch(object):
         content = response.json()
         return content['issues']
 
+    def list_ids(self, query):
+        log('Querying ' + query)
+        response = self.get('/search', params={'jql': query, 'fields': 'key', 'maxResults': 100})
+        return [issue["key"] for issue in response.json()["issues"]]
+
     def get_issue_uri(self, issue_key):
         return self.__base_url + '/browse/' + issue_key
 
@@ -241,12 +246,13 @@ def parse_args():
     parser.add_argument('-xi', '--issue-exclude', dest='issue_excludes', action='append', default=[], help='Exclude issue keys; can be repeated for multiple issues')
     parser.add_argument('-s', '--show-directions', dest='show_directions', default=['inward', 'outward'], help='which directions to show (inward, outward)')
     parser.add_argument('-d', '--directions', dest='directions', default=['inward', 'outward'], help='which directions to walk (inward, outward)')
+    parser.add_argument('--jql', dest='jql_query', default=None, help='JQL search for issues (e.g. \'project = JRADEV\')')
     parser.add_argument('-ns', '--node-shape', dest='node_shape', default='box', help='which shape to use for nodes (circle, box, ellipse, etc)')
     parser.add_argument('-t', '--ignore-subtasks', action='store_true', default=False, help='Don''t include sub-tasks issues')
     parser.add_argument('-T', '--dont-traverse', dest='traverse', action='store_false', default=True, help='Do not traverse to other projects')
     parser.add_argument('-w', '--word-wrap', dest='word_wrap', default=False, action='store_true', help='Word wrap issue summaries instead of truncating them')
     parser.add_argument('--no-verify-ssl', dest='no_verify_ssl', default=False, action='store_true', help='Don\'t verify SSL certs for requests')
-    parser.add_argument('issues', nargs='+', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
+    parser.add_argument('issues', nargs='*', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
     return parser.parse_args()
 
 
@@ -276,6 +282,9 @@ def main():
         auth = (user, password)
 
     jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl)
+
+    if options.jql_query is not None:
+        options.issues.extend(jira.list_ids(options.jql_query))
 
     graph = []
     for issue in options.issues:

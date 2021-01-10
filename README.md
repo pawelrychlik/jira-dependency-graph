@@ -126,6 +126,13 @@ Multiple issue-keys can be passed in via space separated format e.g.
 $ python jira-dependency-graph.py --cookie <JSESSIONID> issue-key1 issue-key2
 ```
 
+### JQL Query
+
+Instead of passing issue-keys, a Jira Query Language command can be passed with `--jql` e.g.
+```bash
+$ python jira-dependency-graph.py --cookie <JSESSIONID> --jql 'project = JRADEV'
+```
+
 
 Usage without Google Graphviz API:
 ============
