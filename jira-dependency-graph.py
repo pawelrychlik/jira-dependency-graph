@@ -24,9 +24,12 @@ class JiraSearch(object):
 
     __base_url = None
 
-    def __init__(self, url, auth, no_verify_ssl):
+    def __init__(self, url, jira_version, auth, no_verify_ssl):
         self.__base_url = url
-        self.url = url + '/rest/api/latest'
+        if jira_version == "2":
+            self.url = url + '/rest/api/2'
+        else:
+            self.url = url + 'rest/api/latest'
         self.auth = auth
         self.no_verify_ssl = no_verify_ssl
         self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
@@ -237,6 +240,7 @@ def parse_args():
     parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
     parser.add_argument('-N', '--no-auth', dest='no_auth', action='store_true', default=False, help='Use no authentication')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL (with protocol)')
+    parser.add_argument('-jv', '--jira_version', dest='jira_version', default='1', help='JIRA API Version (eg "1", "2")')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
     parser.add_argument('-e', '--ignore-epic', action='store_true', default=False, help='Don''t follow an Epic into it''s children issues')
@@ -281,7 +285,7 @@ def main():
                     else getpass.getpass('Password: ')
         auth = (user, password)
 
-    jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl)
+    jira = JiraSearch(options.jira_url, options.jira_version, auth, options.no_verify_ssl)
 
     if options.jql_query is not None:
         options.issues.extend(jira.list_ids(options.jql_query))
