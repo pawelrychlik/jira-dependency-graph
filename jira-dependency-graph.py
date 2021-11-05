@@ -59,10 +59,7 @@ class JiraSearch(object):
             "X-Atlassian-Token": "no-check"
         }
         url = self.url + uri
-
-        print("file_attachment: " + file_attachment)
         head, tail = os.path.split(file_attachment)
-        print("tail: " + tail)
         files = [
             ('file', (tail, open(file_attachment, 'rb'), 'image/png'))
         ]
@@ -96,7 +93,7 @@ class JiraSearch(object):
     def add_attachment(self, key, file_attachment):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
             with JIRA's REST API. """
-        log('Adding attachment to ' + key)
+        log('Attaching %s to %s' % (file_attachment, key))
         # we need to expand subtasks and links since that's what we care about here.
         response = self.post('/issue/%s/attachments' % key, file_attachment)
         response.raise_for_status()
@@ -109,7 +106,6 @@ class JiraSearch(object):
         # we need to expand subtasks and links since that's what we care about here.
         response = self.put('/issue/%s' % key, payload)
         response.raise_for_status()
-        # print("response.text: " + response.text)
         return response
         # return response
 
@@ -282,7 +278,6 @@ def update_issue_graph(issue_key, jira, file_attachment_path):
         """ issue is the JSON representation of the issue """
         # attach the file image to the card
         response_json = jira.add_attachment(issue_key, file_attachment_path)
-        # print(response_json)
 
         # generate the inline image markup of the newly attached image
         _, attachment_name = os.path.split(file_attachment_path)
@@ -292,7 +287,6 @@ def update_issue_graph(issue_key, jira, file_attachment_path):
         # append or replace the description's inline image
         issue = jira.get_issue(issue_key)
         description = issue['fields']['description']
-        # print(description)
         previous_image = re.search(r"^(h3\.\s*Jira Dependency Graph\s+\!)([^\!]+)(\!)", description, re.MULTILINE)
         if previous_image is not None:
             old_attachment_name = previous_image.group(2) # leaving deletion to humans, just in case
@@ -300,13 +294,11 @@ def update_issue_graph(issue_key, jira, file_attachment_path):
                                               previous_image.group(1) + image_tag + previous_image.group(3))
         else:
             description = description + "\n\nh3.Jira Dependency Graph\n\n!" + image_tag + "!\n"
-        # print(description)
 
         # update the card's description
         updated_fields = {"fields": {"description": description}}
         payload = json.dumps(updated_fields)
         response_json = jira.update_issue(issue_key, payload)
-        # print(response_json)
 
     return update(issue_key, file_attachment_path)
 
@@ -314,11 +306,12 @@ def update_issue_graph(issue_key, jira, file_attachment_path):
 def create_graph_image(graph_data, image_file, node_shape):
     """ Given a formatted blob of graphviz chart data[1], generate and store the resulting image to disk.
     """
-    print('Writing to ' + image_file + "*")
 
     digraph = 'digraph{node [shape=' + node_shape + '];%s}' % ';'.join(graph_data)
     src = graphviz.Source(digraph)
+    log('Writing ' + image_file + ".png")
     src.render(image_file, format="png") # for the card description, mostly
+    log('Writing ' + image_file + ".pdf")
     src.render(image_file, format="pdf") # fun b/c nodes are hyperlinks to jira, allowing navigation from the graph
 
     return image_file
@@ -408,7 +401,6 @@ def main():
         timestamp_str = datetime.now().isoformat(timespec='seconds').translate({ord(c): None for c in ":-"})
         filename_str = '/out/' + issues_str + '.graph.' + timestamp_str
         options.image_file = filename_str
-    print("options.image_file: " + options.image_file)
 
     graph = []
     for issue in options.issues:
@@ -422,7 +414,6 @@ def main():
         image_file = create_graph_image(filter_duplicates(graph), options.image_file, options.node_shape)
         if options.issue_update:
             file_attachment_path = image_file + ".png"
-            print("file_attachment_path: " + file_attachment_path)
             update_issue_graph(options.issue_update, jira, file_attachment_path)
 
 if __name__ == '__main__':
