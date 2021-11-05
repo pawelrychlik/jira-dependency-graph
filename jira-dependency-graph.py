@@ -2,6 +2,12 @@
 
 from __future__ import print_function
 
+import os
+
+try:
+    import configparser
+except:
+    from six.moves import configparser
 import argparse
 import getpass
 import sys
@@ -10,8 +16,15 @@ import textwrap
 import requests
 from functools import reduce
 
-GOOGLE_CHART_URL = 'https://chart.apis.google.com/chart'
-MAX_SUMMARY_LENGTH = 30
+from datetime import datetime, timezone
+
+import graphviz
+
+import re
+import json
+from PIL import Image
+
+MAX_SUMMARY_LENGTH = 40
 
 
 def log(*args):
@@ -40,6 +53,37 @@ class JiraSearch(object):
         else:
             return requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
 
+    def post(self, uri, file_attachment):
+        headers = {
+            "Accept": "application/json",
+            "X-Atlassian-Token": "no-check"
+        }
+        url = self.url + uri
+
+        print("file_attachment: " + file_attachment)
+        head, tail = os.path.split(file_attachment)
+        print("tail: " + tail)
+        files = [
+            ('file', (tail, open(file_attachment, 'rb'), 'image/png'))
+        ]
+        if isinstance(self.auth, str):
+            return requests.post(url, cookies={'JSESSIONID': self.auth}, files=files, headers=headers, verify=self.no_verify_ssl)
+        else:
+            return requests.post(url, auth=self.auth, files=files, headers=headers, verify=(not self.no_verify_ssl))
+
+    def put(self, uri, payload):
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        url = self.url + uri
+
+        if isinstance(self.auth, str):
+            return requests.put(url, cookies={'JSESSIONID': self.auth}, data=payload, headers=headers, verify=self.no_verify_ssl)
+        else:
+            return requests.put(url, auth=self.auth, data=payload, headers=headers, verify=(not self.no_verify_ssl))
+
+
     def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
             with JIRA's REST API. """
@@ -48,6 +92,26 @@ class JiraSearch(object):
         response = self.get('/issue/%s' % key, params={'fields': self.fields})
         response.raise_for_status()
         return response.json()
+
+    def add_attachment(self, key, file_attachment):
+        """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
+            with JIRA's REST API. """
+        log('Adding attachment to ' + key)
+        # we need to expand subtasks and links since that's what we care about here.
+        response = self.post('/issue/%s/attachments' % key, file_attachment)
+        response.raise_for_status()
+        return response.json()
+
+    def update_issue(self, key, payload):
+        """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
+            with JIRA's REST API. """
+        log('Updating ' + key)
+        # we need to expand subtasks and links since that's what we care about here.
+        response = self.put('/issue/%s' % key, payload)
+        response.raise_for_status()
+        # print("response.text: " + response.text)
+        return response
+        # return response
 
     def query(self, query):
         log('Querying ' + query)
@@ -94,11 +158,14 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
             if len(summary) > MAX_SUMMARY_LENGTH + 2:
                 summary = fields['summary'][:MAX_SUMMARY_LENGTH] + '...'
         summary = summary.replace('"', '\\"')
+        summary = summary.replace('\n', '\\n')
         # log('node ' + issue_key + ' status = ' + str(status))
 
         if islink:
-            return '"{}\\n({})"'.format(issue_key, summary)
-        return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary, jira.get_issue_uri(issue_key), get_status_color(status))
+            return '"{} {}\\n{}"'.format(issue_key, fields['status']['name'], summary)
+        return '"{} {}\\n{}" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, fields['status']['name'],
+                                                                               summary, jira.get_issue_uri(issue_key),
+                                                                               get_status_color(status))
 
     def process_link(fields, issue_key, link):
         if 'outwardIssue' in link:
@@ -136,7 +203,7 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
         arrow = ' => ' if direction == 'outward' else ' <= '
         log(issue_key + arrow + link_type + arrow + linked_issue_key)
 
-        extra = ',color="red"' if link_type == "blocks" else ""
+        extra = ',color="red"' if link_type in ["blocks", "is blocking", "is blocked by"] else ""
 
         if direction not in show_directions:
             node = None
@@ -207,38 +274,81 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     return walk(start_issue_key, [])
 
 
-def create_graph_image(graph_data, image_file, node_shape):
-    """ Given a formatted blob of graphviz chart data[1], make the actual request to Google
-        and store the resulting image to disk.
-
-        [1]: http://code.google.com/apis/chart/docs/gallery/graphviz.html
+def update_issue_graph(issue_key, jira, file_attachment_path):
+    """ Given a key and the issue-fetching function, insert/update the auto-generated graph to the card's description.
     """
-    digraph = 'digraph{node [shape=' + node_shape +'];%s}' % ';'.join(graph_data)
 
-    response = requests.post(GOOGLE_CHART_URL, data = {'cht':'gv', 'chl': digraph})
+    def update(issue_key, file_attachment_path):
+        """ issue is the JSON representation of the issue """
+        # attach the file image to the card
+        response_json = jira.add_attachment(issue_key, file_attachment_path)
+        # print(response_json)
 
-    with open(image_file, 'w+b') as image:
-        print('Writing to ' + image_file)
-        binary_format = bytearray(response.content)
-        image.write(binary_format)
-        image.close()
+        # generate the inline image markup of the newly attached image
+        _, attachment_name = os.path.split(file_attachment_path)
+        width, height = Image.open(file_attachment_path).size
+        image_tag = "%s|width=%d,height=%d"  % (attachment_name, width, height)
+
+        # append or replace the description's inline image
+        issue = jira.get_issue(issue_key)
+        description = issue['fields']['description']
+        # print(description)
+        previous_image = re.search(r"^(h3\.\s*Jira Dependency Graph\s+\!)([^\!]+)(\!)", description, re.MULTILINE)
+        if previous_image is not None:
+            old_attachment_name = previous_image.group(2) # leaving deletion to humans, just in case
+            description = description.replace(previous_image.group(0),
+                                              previous_image.group(1) + image_tag + previous_image.group(3))
+        else:
+            description = description + "\n\nh3.Jira Dependency Graph\n\n!" + image_tag + "!\n"
+        # print(description)
+
+        # update the card's description
+        updated_fields = {"fields": {"description": description}}
+        payload = json.dumps(updated_fields)
+        response_json = jira.update_issue(issue_key, payload)
+        # print(response_json)
+
+    return update(issue_key, file_attachment_path)
+
+
+def create_graph_image(graph_data, image_file, node_shape):
+    """ Given a formatted blob of graphviz chart data[1], generate and store the resulting image to disk.
+    """
+    print('Writing to ' + image_file + "*")
+
+    digraph = 'digraph{node [shape=' + node_shape + '];%s}' % ';'.join(graph_data)
+    src = graphviz.Source(digraph)
+    src.render(image_file, format="png") # for the card description, mostly
+    src.render(image_file, format="pdf") # fun b/c nodes are hyperlinks to jira, allowing navigation from the graph
 
     return image_file
-
 
 def print_graph(graph_data, node_shape):
     print('digraph{\nnode [shape=' + node_shape +'];\n\n%s\n}' % ';\n'.join(graph_data))
 
 
-def parse_args():
+def parse_args(choice_of_org=None):
+    config = configparser.ConfigParser()
+    config.read('./personal-config.ini')
+    if choice_of_org is None:
+        choice_of_org = config.sections()[0]
+
+    default_host = config[choice_of_org]['JIRA_HOST']
+    default_user = config[choice_of_org]['JIRA_USER']
+    default_pass = config[choice_of_org]['JIRA_PASS']
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--user', dest='user', default=None, help='Username to access JIRA')
-    parser.add_argument('-p', '--password', dest='password', default=None, help='Password to access JIRA')
+
+    parser.add_argument('-o', '--org', dest='org', default=choice_of_org, help='JIRA org')
+
+    parser.add_argument('-u', '--user', dest='user', default=default_user, help='Username to access JIRA')
+    parser.add_argument('-p', '--password', dest='password', default=default_pass, help='Password to access JIRA')
     parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
     parser.add_argument('-N', '--no-auth', dest='no_auth', action='store_true', default=False, help='Use no authentication')
-    parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL (with protocol)')
-    parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
+    parser.add_argument('-j', '--jira', dest='jira_url', default=default_host, help='JIRA Base URL (with protocol)')
+    parser.add_argument('-f', '--file', dest='image_file', default='issue_graph', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
+    parser.add_argument('-iu', '--issue-update', dest='issue_update', default='', help='Update issue description graph')
     parser.add_argument('-e', '--ignore-epic', action='store_true', default=False, help='Don''t follow an Epic into it''s children issues')
     parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
     parser.add_argument('-ic', '--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
@@ -265,7 +375,13 @@ def filter_duplicates(lst):
 
 
 def main():
+    config = configparser.ConfigParser()
+    config.read('./personal-config.ini')
+
+    # parse args as if for default org.  if parsed org is not the default org, then re-parse
     options = parse_args()
+    if options.org != config.sections()[0]:
+        options = parse_args(options.org)
 
     if options.cookie is not None:
         # Log in with browser and use --cookie=ABCDEF012345 commandline argument
@@ -286,6 +402,14 @@ def main():
     if options.jql_query is not None:
         options.issues.extend(jira.list_ids(options.jql_query))
 
+    # override the default image name with one that indicates issues queried
+    if options.image_file == 'issue_graph':
+        issues_str = '-'.join(options.issues)
+        timestamp_str = datetime.now().isoformat(timespec='seconds').translate({ord(c): None for c in ":-"})
+        filename_str = '/out/' + issues_str + '.graph.' + timestamp_str
+        options.image_file = filename_str
+    print("options.image_file: " + options.image_file)
+
     graph = []
     for issue in options.issues:
         graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions,
@@ -295,8 +419,11 @@ def main():
     if options.local:
         print_graph(filter_duplicates(graph), options.node_shape)
     else:
-        create_graph_image(filter_duplicates(graph), options.image_file, options.node_shape)
-
+        image_file = create_graph_image(filter_duplicates(graph), options.image_file, options.node_shape)
+        if options.issue_update:
+            file_attachment_path = image_file + ".png"
+            print("file_attachment_path: " + file_attachment_path)
+            update_issue_graph(options.issue_update, jira, file_attachment_path)
 
 if __name__ == '__main__':
     main()
