@@ -24,10 +24,11 @@ class JiraSearch(object):
 
     __base_url = None
 
-    def __init__(self, url, auth, no_verify_ssl):
+    def __init__(self, url, auth, no_verify_ssl, use_bearer):
         self.__base_url = url
         self.url = url + '/rest/api/latest'
         self.auth = auth
+        self.use_bearer = use_bearer
         self.no_verify_ssl = no_verify_ssl
         self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
 
@@ -35,7 +36,10 @@ class JiraSearch(object):
         headers = {'Content-Type' : 'application/json'}
         url = self.url + uri
 
-        if isinstance(self.auth, str):
+        if self.use_bearer:
+            headers['Authorization'] = 'Bearer ' + self.auth
+            return requests.get(url, params=params, headers=headers, verify=self.no_verify_ssl)
+        elif isinstance(self.auth, str):
             return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.no_verify_ssl)
         else:
             return requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
@@ -234,6 +238,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--user', dest='user', default=None, help='Username to access JIRA')
     parser.add_argument('-p', '--password', dest='password', default=None, help='Password to access JIRA')
+    parser.add_argument('-b', '--bearer', dest='bearer', default=None, help='Personal Access Token to access JIRA')
     parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
     parser.add_argument('-N', '--no-auth', dest='no_auth', action='store_true', default=False, help='Use no authentication')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL (with protocol)')
@@ -267,7 +272,9 @@ def filter_duplicates(lst):
 def main():
     options = parse_args()
 
-    if options.cookie is not None:
+    if options.bearer is not None:
+        auth = options.bearer
+    elif options.cookie is not None:
         # Log in with browser and use --cookie=ABCDEF012345 commandline argument
         auth = options.cookie
     elif options.no_auth is True:
@@ -281,7 +288,7 @@ def main():
                     else getpass.getpass('Password: ')
         auth = (user, password)
 
-    jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl)
+    jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl, (options.bearer is not None))
 
     if options.jql_query is not None:
         options.issues.extend(jira.list_ids(options.jql_query))
