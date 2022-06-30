@@ -105,7 +105,10 @@ Use it as a last-resort only, when other means of exclusion do not suit your cas
 
 ### Authentication
 
-It is possible to either use the username/password combination or to login via the browser passing in `--cookie <JSESSIONID>`. This logins via the browser and is useful in scenarios where Kerberos authentication is required.
+It is possible to either use:
+* the username/password combination
+* to login via a token passing in `--bearer <BEARER TOKEN>`. This allows to use a Personal Access Token generated in your JIRA profile (https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html)
+* to login via the browser passing in `--cookie <JSESSIONID>`. This logins via the browser and is useful in scenarios where Kerberos authentication is required.
 
 If you are using Atlassian Cloud, use your API token instead of your account password. You can generate one with the following steps:
 
