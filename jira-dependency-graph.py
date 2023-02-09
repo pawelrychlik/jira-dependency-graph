@@ -29,7 +29,7 @@ class JiraSearch(object):
         self.url = url + '/rest/api/latest'
         self.auth = auth
         self.no_verify_ssl = no_verify_ssl
-        self.fields = ','.join(['key', 'summary', 'status', 'description', 'issuetype', 'issuelinks', 'subtasks'])
+        self.fields = ','.join(['key', 'summary', 'status', 'assignee', 'description', 'issuetype', 'issuelinks', 'subtasks'])
 
     def get(self, uri, params={}):
         headers = {'Content-Type' : 'application/json'}
@@ -65,7 +65,7 @@ class JiraSearch(object):
 
 
 def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, issue_excludes,
-                     ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap):
+                     ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap, show_assignee):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
     """
@@ -83,6 +83,9 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
     def create_node_text(issue_key, fields, islink=True):
         summary = fields['summary']
         status = fields['status']
+        assignee = ''
+        if show_assignee and 'assignee' in fields and fields['assignee']:
+            assignee = '<BR/><I>' + fields['assignee']['displayName'] + '</I>'
 
         if word_wrap == True:
             if len(summary) > MAX_SUMMARY_LENGTH:
@@ -98,7 +101,8 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
 
         if islink:
             return '"{}\\n({})"'.format(issue_key, summary)
-        return '"{}\\n({})" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary, jira.get_issue_uri(issue_key), get_status_color(status))
+        return '"{}\\n({}){}" [href="{}", fillcolor="{}", style=filled]'.format(issue_key, summary, assignee, jira.get_issue_uri(issue_key), get_status_color(status))
+
 
     def process_link(fields, issue_key, link):
         if 'outwardIssue' in link:
@@ -251,6 +255,7 @@ def parse_args():
     parser.add_argument('-t', '--ignore-subtasks', action='store_true', default=False, help='Don''t include sub-tasks issues')
     parser.add_argument('-T', '--dont-traverse', dest='traverse', action='store_false', default=True, help='Do not traverse to other projects')
     parser.add_argument('-w', '--word-wrap', dest='word_wrap', default=False, action='store_true', help='Word wrap issue summaries instead of truncating them')
+    parser.add_argument('-b', '--show-assignee', dest='show_assignee', default=False, action='store_true', help='Show assignee in issues')
     parser.add_argument('--no-verify-ssl', dest='no_verify_ssl', default=False, action='store_true', help='Don\'t verify SSL certs for requests')
     parser.add_argument('issues', nargs='*', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
     return parser.parse_args()
@@ -290,7 +295,7 @@ def main():
     for issue in options.issues:
         graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions,
                                          options.includes, options.issue_excludes, options.closed, options.ignore_epic,
-                                         options.ignore_subtasks, options.traverse, options.word_wrap)
+                                         options.ignore_subtasks, options.traverse, options.word_wrap, options.show_assignee)
 
     if options.local:
         print_graph(filter_duplicates(graph), options.node_shape)
