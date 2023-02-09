@@ -1,1 +1,2 @@
 requests ~= 2.22
+requests-cache ~= 0.6

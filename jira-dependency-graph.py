@@ -8,11 +8,13 @@ import sys
 import textwrap
 
 import requests
+import requests_cache
 from functools import reduce
 
 GOOGLE_CHART_URL = 'https://chart.apis.google.com/chart'
 MAX_SUMMARY_LENGTH = 30
 
+cached_requests = requests_cache.CachedSession('jira_cache')
 
 def log(*args):
     print(*args, file=sys.stderr)
@@ -36,9 +38,9 @@ class JiraSearch(object):
         url = self.url + uri
 
         if isinstance(self.auth, str):
-            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.no_verify_ssl)
+            return cached_requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.no_verify_ssl)
         else:
-            return requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
+            return cached_requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
 
     def get_issue(self, key):
         """ Given an issue key (i.e. JRA-9) return the JSON representation of it. This is the only place where we deal
@@ -251,6 +253,7 @@ def parse_args():
     parser.add_argument('-t', '--ignore-subtasks', action='store_true', default=False, help='Don''t include sub-tasks issues')
     parser.add_argument('-T', '--dont-traverse', dest='traverse', action='store_false', default=True, help='Do not traverse to other projects')
     parser.add_argument('-w', '--word-wrap', dest='word_wrap', default=False, action='store_true', help='Word wrap issue summaries instead of truncating them')
+    parser.add_argument('-a', '--clear-cache', dest='clear_cache', default=False, action='store_true', help='Clear requests cache')
     parser.add_argument('--no-verify-ssl', dest='no_verify_ssl', default=False, action='store_true', help='Don\'t verify SSL certs for requests')
     parser.add_argument('issues', nargs='*', help='The issue key (e.g. JRADEV-1107, JRADEV-1391)')
     return parser.parse_args()
@@ -280,6 +283,9 @@ def main():
         password = options.password if options.password is not None \
                     else getpass.getpass('Password: ')
         auth = (user, password)
+
+    if options.clear_cache is True:
+        cached_requests.cache.clear()
 
     jira = JiraSearch(options.jira_url, auth, options.no_verify_ssl)
 
