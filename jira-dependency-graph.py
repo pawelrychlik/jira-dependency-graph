@@ -35,8 +35,10 @@ class JiraSearch(object):
         headers = {'Content-Type' : 'application/json'}
         url = self.url + uri
 
-        if isinstance(self.auth, str):
-            return requests.get(url, params=params, cookies={'JSESSIONID': self.auth}, headers=headers, verify=self.no_verify_ssl)
+        if isinstance(self.auth, dict):
+            headers_with_auth = headers.copy()
+            headers_with_auth.update(self.auth)
+            return requests.get(url, params=params, headers=headers_with_auth, verify=(not self.no_verify_ssl))
         else:
             return requests.get(url, params=params, auth=self.auth, headers=headers, verify=(not self.no_verify_ssl))
 
@@ -238,6 +240,7 @@ def parse_args():
     parser.add_argument('-u', '--user', dest='user', default=None, help='Username to access JIRA')
     parser.add_argument('-p', '--password', dest='password', default=None, help='Password to access JIRA')
     parser.add_argument('-c', '--cookie', dest='cookie', default=None, help='JSESSIONID session cookie value')
+    parser.add_argument('-b', '--bearer', dest='bearer', default=None, help='Bearer Token (Personal Access Token)')
     parser.add_argument('-N', '--no-auth', dest='no_auth', action='store_true', default=False, help='Use no authentication')
     parser.add_argument('-j', '--jira', dest='jira_url', default='http://jira.example.com', help='JIRA Base URL (with protocol)')
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
@@ -271,9 +274,12 @@ def filter_duplicates(lst):
 def main():
     options = parse_args()
 
-    if options.cookie is not None:
+    if options.bearer is not None:
+        # Generate JIRA Personal Access Token and use --bearer=ABCDEF012345 commandline argument
+        auth = {'Authorization': 'Bearer ' + options.bearer}
+    elif options.cookie is not None:
         # Log in with browser and use --cookie=ABCDEF012345 commandline argument
-        auth = options.cookie
+        auth = {'JSESSIONID': options.cookie}
     elif options.no_auth is True:
         # Don't use authentication when it's not needed
         auth = None
