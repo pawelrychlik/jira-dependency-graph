@@ -64,7 +64,7 @@ class JiraSearch(object):
         return self.__base_url + '/browse/' + issue_key
 
 
-def build_graph_data(start_issue_key, jira, excludes, show_directions, directions, includes, issue_excludes,
+def build_graph_data(start_issue_key, jira, excludes, ignores, show_directions, directions, includes, issue_excludes,
                      ignore_closed, ignore_epic, ignore_subtasks, traverse, word_wrap):
     """ Given a starting image key and the issue-fetching function build up the GraphViz data representing relationships
         between issues. This will consider both subtasks and issue links.
@@ -128,6 +128,9 @@ def build_graph_data(start_issue_key, jira, excludes, show_directions, direction
                 return
 
         if includes not in linked_issue_key:
+            return
+
+        if link_type.strip() in ignores:
             return
 
         if link_type.strip() in excludes:
@@ -240,7 +243,8 @@ def parse_args():
     parser.add_argument('-f', '--file', dest='image_file', default='issue_graph.png', help='Filename to write image to')
     parser.add_argument('-l', '--local', action='store_true', default=False, help='Render graphviz code to stdout')
     parser.add_argument('-e', '--ignore-epic', action='store_true', default=False, help='Don''t follow an Epic into it''s children issues')
-    parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Exclude link type(s)')
+    parser.add_argument('-x', '--exclude-link', dest='excludes', default=[], action='append', help='Travel link type(s) but excluding it from the graph')
+    parser.add_argument('-il', '--ignore-link', dest='ignores', default=[], action='append', help='Exclude link type(s)')
     parser.add_argument('-ic', '--ignore-closed', dest='closed', action='store_true', default=False, help='Ignore closed issues')
     parser.add_argument('-i', '--issue-include', dest='includes', default='', help='Include issue keys')
     parser.add_argument('-xi', '--issue-exclude', dest='issue_excludes', action='append', default=[], help='Exclude issue keys; can be repeated for multiple issues')
@@ -288,7 +292,7 @@ def main():
 
     graph = []
     for issue in options.issues:
-        graph = graph + build_graph_data(issue, jira, options.excludes, options.show_directions, options.directions,
+        graph = graph + build_graph_data(issue, jira, options.excludes, options.ignores, options.show_directions, options.directions,
                                          options.includes, options.issue_excludes, options.closed, options.ignore_epic,
                                          options.ignore_subtasks, options.traverse, options.word_wrap)
 
