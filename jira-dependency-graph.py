@@ -115,6 +115,11 @@ def build_graph_data(start_issue_key, jira, excludes, ignores, show_directions, 
 
         linked_issue = link[direction + 'Issue']
         linked_issue_key = get_key(linked_issue)
+
+        if skip_issue(linked_issue_key, linked_issue['fields']):
+            # logging present in skip_issue(), hence bare return here
+            return
+
         if linked_issue_key in issue_excludes:
             log('Skipping ' + linked_issue_key + ' - explicitly excluded')
             return
@@ -164,12 +169,7 @@ def build_graph_data(start_issue_key, jira, excludes, ignores, show_directions, 
         fields = issue['fields']
         seen.append(issue_key)
 
-        if ignore_closed and (fields['status']['name'] in 'Closed'):
-            log('Skipping ' + issue_key + ' - it is Closed')
-            return graph
-
-        if not traverse and ((project_prefix + '-') not in issue_key):
-            log('Skipping ' + issue_key + ' - not traversing to a different project')
+        if skip_issue(issue_key, fields):
             return graph
 
         graph.append(create_node_text(issue_key, fields, islink=False))
@@ -180,11 +180,12 @@ def build_graph_data(start_issue_key, jira, excludes, ignores, show_directions, 
                 for subtask in issues:
                     subtask_key = get_key(subtask)
                     log(subtask_key + ' => references epic => ' + issue_key)
-                    node = '{}->{}[color=orange]'.format(
-                        create_node_text(issue_key, fields),
-                        create_node_text(subtask_key, subtask['fields']))
-                    graph.append(node)
-                    children.append(subtask_key)
+                    if not skip_issue(subtask_key, subtask['fields']):
+                        node = '{}->{}[color=orange]'.format(
+                            create_node_text(issue_key, fields),
+                            create_node_text(subtask_key, subtask['fields']))
+                        graph.append(node)
+                        children.append(subtask_key)
             if 'subtasks' in fields and not ignore_subtasks:
                 for subtask in fields['subtasks']:
                     subtask_key = get_key(subtask)
@@ -207,6 +208,15 @@ def build_graph_data(start_issue_key, jira, excludes, ignores, show_directions, 
         for child in (x for x in children if x not in seen):
             walk(child, graph)
         return graph
+
+    def skip_issue(issue_key, fields):
+        if ignore_closed and (fields['status']['name'] in 'Closed'):
+            log('Skipping ' + issue_key + ' - it is Closed')
+            return True
+        if not traverse and ((project_prefix + '-') not in issue_key):
+            log('Skipping ' + issue_key + ' - not traversing to a different project')
+            return True
+        return False
 
     project_prefix = start_issue_key.split('-', 1)[0]
     return walk(start_issue_key, [])
